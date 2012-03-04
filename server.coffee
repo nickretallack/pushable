@@ -1,4 +1,13 @@
 b2d = require "box2dnode"
+Faye = require 'faye'
+express = require 'express'
+app = express.createServer()
+app.use express.static __dirname
+app.use express.errorHandler dumpExceptions:true, showStack: true
+
+faye = new Faye.NodeAdapter mount:'/faye'
+faye_client = faye.getClient()
+faye.attach app
 
 gravity = new b2d.b2Vec2 0, -10
 world = new b2d.b2World gravity, true
@@ -21,7 +30,8 @@ body.CreateFixture fixtureDef
 
 update = ->
     world.Step 1/30, 10, 10
-    console.log body.GetPosition()
+    faye_client.publish '/foo', body.GetPosition()
 
 setInterval update, 1000/60
 
+app.listen 8000
