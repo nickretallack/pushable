@@ -1,5 +1,5 @@
 (function() {
-  var Faye, app, b2d, body, bodyDef, dynamicBox, express, faye, faye_client, fixtureDef, gravity, update, world;
+  var Faye, app, b2d, body, box_body_def, box_fixture_def, box_shape_def, express, faye, faye_client, gravity, update, world;
 
   b2d = require("box2dnode");
 
@@ -28,30 +28,29 @@
 
   world = new b2d.b2World(gravity, true);
 
-  bodyDef = new b2d.b2BodyDef;
+  box_body_def = new b2d.b2BodyDef;
 
-  bodyDef.type = b2d.b2Body.b2_dynamicBody;
+  box_body_def.type = b2d.b2Body.b2_dynamicBody;
 
-  bodyDef.position.Set(0.0, 4.0);
+  box_shape_def = new b2d.b2PolygonShape;
 
-  body = world.CreateBody(bodyDef);
+  box_shape_def.SetAsBox(1.0, 1.0);
 
-  dynamicBox = new b2d.b2PolygonShape;
+  box_fixture_def = new b2d.b2FixtureDef;
 
-  dynamicBox.SetAsBox(1.0, 1.0);
+  box_fixture_def.shape = box_shape_def;
 
-  fixtureDef = new b2d.b2FixtureDef;
+  box_fixture_def.density = 1.0;
 
-  fixtureDef.shape = dynamicBox;
+  box_fixture_def.friction = 0.3;
 
-  fixtureDef.density = 1.0;
+  body = world.CreateBody(box_body_def);
 
-  fixtureDef.friction = 0.3;
-
-  body.CreateFixture(fixtureDef);
+  body.CreateFixture(box_fixture_def);
 
   update = function() {
     world.Step(1 / 30, 10, 10);
+    console.log(body.GetPosition());
     return faye_client.publish('/foo', body.GetPosition());
   };
 
