@@ -1,11 +1,17 @@
 (function() {
-  var Faye, app, b2d, body, box_body_def, box_fixture_def, box_shape_def, express, faye, faye_client, gravity, update, world;
+  var Faye, V, Vector, app, b2d, body, box_body_def, box_fixture_def, box_shape_def, box_size, express, faye, faye_client, gravity, update, vectors, world;
 
   b2d = require("box2dnode");
 
   Faye = require('faye');
 
   express = require('express');
+
+  vectors = require('./common/vector_compatibility');
+
+  V = vectors.V;
+
+  Vector = vectors.Vector;
 
   app = express.createServer();
 
@@ -24,9 +30,11 @@
 
   faye.attach(app);
 
-  gravity = new b2d.b2Vec2(0, -10);
+  gravity = V(0, -10);
 
   world = new b2d.b2World(gravity, true);
+
+  box_size = V(1, 1);
 
   box_body_def = new b2d.b2BodyDef;
 
@@ -34,7 +42,7 @@
 
   box_shape_def = new b2d.b2PolygonShape;
 
-  box_shape_def.SetAsBox(1.0, 1.0);
+  box_shape_def.SetAsBox.apply(box_shape_def, box_size.components());
 
   box_fixture_def = new b2d.b2FixtureDef;
 
