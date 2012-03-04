@@ -4,6 +4,8 @@ express = require 'express'
 vectors = require './common/vector_compatibility'
 V = vectors.V
 Vector = vectors.Vector
+UUID = require('./common/uuid').UUID
+
 app = express.createServer()
 app.use express.static __dirname
 app.use express.errorHandler dumpExceptions:true, showStack: true
@@ -11,6 +13,9 @@ app.use express.errorHandler dumpExceptions:true, showStack: true
 faye = new Faye.NodeAdapter mount:'/faye'
 faye_client = faye.getClient()
 faye.attach app
+
+# registry
+things = {}
 
 # make the world
 gravity = V 0, -10
@@ -27,13 +32,27 @@ box_fixture_def.shape = box_shape_def
 box_fixture_def.density = 1.0
 box_fixture_def.friction = 0.3
 
-body = world.CreateBody box_body_def
-body.CreateFixture box_fixture_def
+class Thing
+    constructor:(@id=UUID())->
+        @body = world.CreateBody box_body_def
+        @body.CreateFixture box_fixture_def
+        things[@id] = @
+
+    toJSON: ->
+        id:@id
+        size:box_size
+        position:@body.GetPosition()
+
 
 update = ->
     world.Step 1/30, 10, 10
-    console.log body.GetPosition()
-    faye_client.publish '/foo', body.GetPosition()
+    faye_client.publish '/foo', JSON.stringify things
 
+app.get '/things', (request, response) ->
+    response.writeHead 200,
+        'Content-Type':'application/json'
+    response.end JSON.stringify things
+
+new Thing
 setInterval update, 1000/60
 app.listen 8000

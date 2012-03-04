@@ -1,5 +1,5 @@
 (function() {
-  var Faye, V, Vector, app, b2d, body, box_body_def, box_fixture_def, box_shape_def, box_size, express, faye, faye_client, gravity, update, vectors, world;
+  var Faye, Thing, UUID, V, Vector, app, b2d, box_body_def, box_fixture_def, box_shape_def, box_size, express, faye, faye_client, gravity, things, update, vectors, world;
 
   b2d = require("box2dnode");
 
@@ -12,6 +12,8 @@
   V = vectors.V;
 
   Vector = vectors.Vector;
+
+  UUID = require('./common/uuid').UUID;
 
   app = express.createServer();
 
@@ -29,6 +31,8 @@
   faye_client = faye.getClient();
 
   faye.attach(app);
+
+  things = {};
 
   gravity = V(0, -10);
 
@@ -52,15 +56,40 @@
 
   box_fixture_def.friction = 0.3;
 
-  body = world.CreateBody(box_body_def);
+  Thing = (function() {
 
-  body.CreateFixture(box_fixture_def);
+    function Thing(id) {
+      this.id = id != null ? id : UUID();
+      this.body = world.CreateBody(box_body_def);
+      this.body.CreateFixture(box_fixture_def);
+      things[this.id] = this;
+    }
+
+    Thing.prototype.toJSON = function() {
+      return {
+        id: this.id,
+        size: box_size,
+        position: this.body.GetPosition()
+      };
+    };
+
+    return Thing;
+
+  })();
 
   update = function() {
     world.Step(1 / 30, 10, 10);
-    console.log(body.GetPosition());
-    return faye_client.publish('/foo', body.GetPosition());
+    return faye_client.publish('/foo', JSON.stringify(things));
   };
+
+  app.get('/things', function(request, response) {
+    response.writeHead(200, {
+      'Content-Type': 'application/json'
+    });
+    return response.end(JSON.stringify(things));
+  });
+
+  new Thing;
 
   setInterval(update, 1000 / 60);
 

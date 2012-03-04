@@ -4,7 +4,7 @@
   faye = new Faye.Client('/faye');
 
   subscription = faye.subscribe('/foo', function(message) {
-    return console.log(message);
+    return console.log(JSON.parse(message));
   });
 
   subscription.callback(function() {
