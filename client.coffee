@@ -1,6 +1,6 @@
 faye = new Faye.Client '/faye'
 subscription = faye.subscribe '/foo', (message) ->
-    console.log JSON.parse message
+    console.log message
 
 subscription.callback ->
     console.log "subscription is now active"
@@ -11,9 +11,10 @@ all_things = {}
 this_frame = {}
 next_frame = {}
 
+all_things = {}
 class Thing
     constructor: ({@size, @id}) ->
-        things[@id] = @
+        all_things[@id] = @
 
 $.get '/objects', (things) ->
     for id, thing of things

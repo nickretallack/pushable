@@ -1,15 +1,20 @@
-b2d = require "box2dnode"
+port = 8000
+interval = 1000/60
+
+
 Faye = require 'faye'
 express = require 'express'
-vectors = require './common/vector_compatibility'
-V = vectors.V
-Vector = vectors.Vector
-UUID = require('./common/uuid').UUID
 
+UUID = require('./library/uuid').UUID
+b2d = require 'box2dnode'
+V = require('./server_box2d_vector').V
+
+# Setup app
 app = express.createServer()
 app.use express.static __dirname
 app.use express.errorHandler dumpExceptions:true, showStack: true
 
+# Setup socket
 faye = new Faye.NodeAdapter mount:'/faye'
 faye_client = faye.getClient()
 faye.attach app
@@ -18,7 +23,7 @@ faye.attach app
 things = {}
 
 # make the world
-gravity = V 0, -10
+gravity = V 0, -9.8
 world = new b2d.b2World gravity, true
 
 box_size = V 1,1
@@ -48,11 +53,14 @@ update = ->
     world.Step 1/30, 10, 10
     faye_client.publish '/foo', JSON.stringify things
 
-app.get '/things', (request, response) ->
+app.get '/objects', (request, response) ->
     response.writeHead 200,
         'Content-Type':'application/json'
     response.end JSON.stringify things
 
 new Thing
-setInterval update, 1000/60
-app.listen 8000
+
+# Get things going
+setInterval update, interval
+app.listen port
+console.log "Listening on #{port}"
