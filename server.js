@@ -125,10 +125,10 @@
         this.physics.force(V(+1, 0));
       }
       if (this.commands.up) {
-        this.physics.force(V(0, +1));
+        this.physics.force(V(0, -1));
       }
       if (this.commands.down) {
-        return this.physics.force(V(0, -1));
+        return this.physics.force(V(0, +1));
       }
     };
 

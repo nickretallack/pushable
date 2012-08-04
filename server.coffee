@@ -83,9 +83,9 @@ class Player
         if @commands.right
             @physics.force V +1, 0
         if @commands.up
-            @physics.force V 0, +1
-        if @commands.down
             @physics.force V 0, -1
+        if @commands.down
+            @physics.force V 0, +1
 
 
 
