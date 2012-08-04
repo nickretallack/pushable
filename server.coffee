@@ -7,10 +7,11 @@ box2d_interval = 1.0/frames_per_second
 
 Faye = require 'faye'
 express = require 'express'
+b2d = require 'box2dnode'
 
 UUID = require('./library/uuid').UUID
-b2d = require 'box2dnode'
 V = require('./server_box2d_vector').V
+frame_rate = require './frame_rate'
 
 # Setup app
 app = express.createServer()
@@ -69,6 +70,7 @@ update = ->
 
     changes = (thing.changes() for id, thing of things when thing.body.IsAwake())
     faye_client.publish '/foo', JSON.stringify changes
+    console.log frame_rate.get_frame_delta()
 
 app.get '/objects', (request, response) ->
     response.writeHead 200,
@@ -129,6 +131,7 @@ faye.addExtension faye_keyboard
 
 
 # Get things going
+frame_rate.get_frame_delta()
 setInterval update, interval
 app.listen port
 console.log "Listening on #{port}"

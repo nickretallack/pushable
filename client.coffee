@@ -39,10 +39,6 @@ get_command = (event) ->
     key = get_key_name event
     commands[key]
 
-last_frame_time = null
-
-now = -> (new Date).valueOf()
-
 $ ->
     game_node = $ '#game'
     faye = new Faye.Client '/faye'
@@ -50,11 +46,8 @@ $ ->
     subscription = faye.subscribe '/foo', (message) ->
 
         # calculate frame rate
-        this_frame_time = now()
-        frame_delta = this_frame_time - last_frame_time
-        last_frame_time = this_frame_time
         #frame_length = frame_delta / 1000.0
-        console.log frame_delta
+        console.log get_frame_delta()
 
         # update things
         things = JSON.parse message
@@ -66,10 +59,11 @@ $ ->
         new Thing thing
 
     subscription.callback ->
-        last_frame_time = now()
+        get_frame_delta()
         $.get '/objects', (things) ->
             for id, thing of things
                 new Thing thing
+            console.log things
 
     subscription.errback (error) -> console.log "Error: #{error}"
 
