@@ -45,6 +45,10 @@ $ ->
         for id, thing of things
             all_things[id].update thing.position
 
+    subscription = faye.subscribe '/player/join', (message) ->
+        thing = JSON.parse message
+        new Thing thing
+
     subscription.callback ->
         console.log "subscription is now active"
         $.get '/objects', (things) ->

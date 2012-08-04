@@ -146,10 +146,13 @@
   })();
 
   get_player = function(id) {
+    var player;
     if (!(id in players)) {
-      players[id] = new Player({
+      player = new Player({
         id: id
       });
+      players[id] = player;
+      faye_client.publish('/player/join', JSON.stringify(player.physics));
     }
     return players[id];
   };

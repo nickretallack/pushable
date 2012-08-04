@@ -72,6 +72,11 @@
       }
       return _results;
     });
+    subscription = faye.subscribe('/player/join', function(message) {
+      var thing;
+      thing = JSON.parse(message);
+      return new Thing(thing);
+    });
     subscription.callback(function() {
       console.log("subscription is now active");
       return $.get('/objects', function(things) {

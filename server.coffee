@@ -94,7 +94,9 @@ class Player
 
 get_player = (id) ->
     if id not of players
-        players[id] = new Player id:id
+        player = new Player id:id
+        players[id] = player
+        faye_client.publish '/player/join', JSON.stringify player.physics
     players[id]
 
 
