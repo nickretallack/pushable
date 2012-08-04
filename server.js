@@ -4,7 +4,7 @@
 
   port = 8000;
 
-  frames_per_second = 60;
+  frames_per_second = 5;
 
   speed = 20;
 
@@ -103,7 +103,7 @@
       player = players[id];
       player.control();
     }
-    world.Step(box2d_interval, 10, 10);
+    world.Step(box2d_interval, 1, 1);
     world.ClearForces();
     changes = (function() {
       var _results;

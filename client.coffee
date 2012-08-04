@@ -1,7 +1,8 @@
 game_node = null
 
 meters_to_pixels = (meters) -> meters * 20
-frame_length = 0.02
+frame_length = 0.17
+
 
 class Thing
     constructor: ({@size, @position, @id}) ->
@@ -38,14 +39,25 @@ get_command = (event) ->
     key = get_key_name event
     commands[key]
 
+last_frame_time = null
+
+now = -> (new Date).valueOf()
 
 $ ->
     game_node = $ '#game'
     faye = new Faye.Client '/faye'
     ready = false
     subscription = faye.subscribe '/foo', (message) ->
+
+        # calculate frame rate
+        this_frame_time = now()
+        frame_delta = this_frame_time - last_frame_time
+        last_frame_time = this_frame_time
+        #frame_length = frame_delta / 1000.0
+        console.log frame_delta
+
+        # update things
         things = JSON.parse message
-        console.log message
         for thing in things
             all_things[thing.id].update thing.position
 
@@ -54,17 +66,17 @@ $ ->
         new Thing thing
 
     subscription.callback ->
-        console.log "subscription is now active"
+        last_frame_time = now()
         $.get '/objects', (things) ->
             for id, thing of things
                 new Thing thing
+
     subscription.errback (error) -> console.log "Error: #{error}"
 
     $(document).on 'keydown', (event) ->
         command = get_command event
         if command? and command not of active_commands
             active_commands[command] = true
-            console.log 'publishing'
             faye.publish '/commands/activate', command
 
     $(document).on 'keyup', (event) ->

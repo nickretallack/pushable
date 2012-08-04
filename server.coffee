@@ -1,5 +1,5 @@
 port = 8000
-frames_per_second = 60
+frames_per_second = 5
 speed = 20
 
 interval = 1000.0/frames_per_second
@@ -64,7 +64,7 @@ update = ->
     for id, player of players
         player.control()
 
-    world.Step box2d_interval, 10, 10
+    world.Step box2d_interval, 1, 1
     world.ClearForces()
 
     changes = (thing.changes() for id, thing of things when thing.body.IsAwake())
