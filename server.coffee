@@ -1,7 +1,6 @@
 port = 8000
 interval = 1000/60
 
-
 Faye = require 'faye'
 express = require 'express'
 
@@ -23,7 +22,7 @@ faye.attach app
 things = {}
 
 # make the world
-gravity = V 0, -9.8
+gravity = V 0, 0 #-9.8
 world = new b2d.b2World gravity, true
 
 box_size = V 1,1
@@ -48,9 +47,16 @@ class Thing
         size:box_size
         position:@body.GetPosition()
 
+    force: (direction) ->
+        @body.ApplyForce direction, @body.GetPosition()
+
 
 update = ->
+    for id, player of players
+        player.control()
+
     world.Step 1/30, 10, 10
+    #world.ClearForces()
     faye_client.publish '/foo', JSON.stringify things
 
 app.get '/objects', (request, response) ->
@@ -58,7 +64,58 @@ app.get '/objects', (request, response) ->
         'Content-Type':'application/json'
     response.end JSON.stringify things
 
-new Thing
+players = {}
+
+class Player
+    constructor: ({@id}) ->
+        @commands = {}
+        @physics = new Thing @id
+
+    press: (command) ->
+        @commands[command] = true
+
+    release: (command) ->
+        delete @commands[command]
+
+    control: ->
+        if @commands.left
+            @physics.force V -1, 0
+        if @commands.right
+            @physics.force V +1, 0
+        if @commands.up
+            @physics.force V 0, +1
+        if @commands.down
+            @physics.force V 0, -1
+
+
+
+get_player = (id) ->
+    if id not of players
+        players[id] = new Player id:id
+    players[id]
+
+
+faye_keyboard =
+    incoming: (message, callback) ->
+        player = get_player message.clientId
+
+        # Eat these messages
+
+        if message.channel is '/commands/activate'
+            player.press message.data
+            return
+
+        if message.channel is '/commands/deactivate'
+            player.release message.data
+            return
+
+        callback message
+
+
+
+faye.addExtension faye_keyboard
+
+
 
 # Get things going
 setInterval update, interval
