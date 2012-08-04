@@ -1,5 +1,9 @@
 port = 8000
-interval = 1000/60
+frames_per_second = 60
+speed = 20
+
+interval = 1000.0/frames_per_second
+box2d_interval = 1.0/frames_per_second
 
 Faye = require 'faye'
 express = require 'express'
@@ -25,16 +29,17 @@ things = {}
 gravity = V 0, 0 #-9.8
 world = new b2d.b2World gravity, true
 
-box_size = V 1,1
+box_size = V 2,2
 box_body_def = new b2d.b2BodyDef
 box_body_def.type = b2d.b2Body.b2_dynamicBody
 #bodyDef.position.Set 0.0, 4.0
-box_shape_def = new b2d.b2PolygonShape
-box_shape_def.SetAsBox box_size.components()...
+box_shape_def = new b2d.b2CircleShape
+box_shape_def.m_radius = 1 #SetAsBox box_size.components()...
 box_fixture_def = new b2d.b2FixtureDef
 box_fixture_def.shape = box_shape_def
 box_fixture_def.density = 1.0
 box_fixture_def.friction = 0.3
+box_body_def.linearDamping = 1
 
 class Thing
     constructor:(@id=UUID())->
@@ -48,15 +53,15 @@ class Thing
         position:@body.GetPosition()
 
     force: (direction) ->
-        @body.ApplyForce direction, @body.GetPosition()
+        @body.ApplyForce direction.scale(speed), @body.GetPosition()
 
 
 update = ->
     for id, player of players
         player.control()
 
-    world.Step 1/30, 10, 10
-    #world.ClearForces()
+    world.Step box2d_interval, 10, 10
+    world.ClearForces()
     faye_client.publish '/foo', JSON.stringify things
 
 app.get '/objects', (request, response) ->
@@ -86,8 +91,6 @@ class Player
             @physics.force V 0, -1
         if @commands.down
             @physics.force V 0, +1
-
-
 
 get_player = (id) ->
     if id not of players

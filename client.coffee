@@ -1,15 +1,21 @@
 game_node = null
 
+meters_to_pixels = (meters) -> meters * 20
+
+
 class Thing
     constructor: ({@size, @id}) ->
         all_things[@id] = @
         @element = $ '<div class="player"></div>'
+        @element.css
+            width:meters_to_pixels @size.x
+            height:meters_to_pixels @size.y
         game_node.append @element
 
     update: (position) ->
         @element.css
-            left:position.x + 200
-            top:position.y + 200
+            left:meters_to_pixels(position.x) + 200
+            top:meters_to_pixels(position.y) + 200
         #console.log "position: x:#{position.x}, y:#{position.y}"
 
 all_things = {}
