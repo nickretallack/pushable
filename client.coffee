@@ -46,7 +46,6 @@ $ ->
     subscription = faye.subscribe '/foo', (message) ->
 
         # calculate frame rate
-        #frame_length = frame_delta / 1000.0
         console.log get_frame_delta()
 
         # update things
@@ -63,7 +62,6 @@ $ ->
         $.get '/objects', (things) ->
             for id, thing of things
                 new Thing thing
-            console.log things
 
     subscription.errback (error) -> console.log "Error: #{error}"
 

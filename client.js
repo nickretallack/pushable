@@ -89,12 +89,13 @@
     subscription.callback(function() {
       get_frame_delta();
       return $.get('/objects', function(things) {
-        var id, thing;
+        var id, thing, _results;
+        _results = [];
         for (id in things) {
           thing = things[id];
-          new Thing(thing);
+          _results.push(new Thing(thing));
         }
-        return console.log(things);
+        return _results;
       });
     });
     subscription.errback(function(error) {
