@@ -1,7 +1,7 @@
 game_node = null
 
 meters_to_pixels = (meters) -> meters * 20
-
+frame_length = 0.02
 
 class Thing
     constructor: ({@size, @id}) ->
@@ -13,9 +13,13 @@ class Thing
         game_node.append @element
 
     update: (position) ->
-        @element.css
+        css = 
             left:meters_to_pixels(position.x) + 200
             top:meters_to_pixels(position.y) + 200
+        css["#{vendor_prefix}-transition"] = "left #{frame_length}s, top #{frame_length}s"
+
+        @element.css css
+            
         #console.log "position: x:#{position.x}, y:#{position.y}"
 
 all_things = {}

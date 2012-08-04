@@ -2,7 +2,8 @@
     position:absolute;
     width:40px;height:40px;
     border-radius:50%;
-    background:blue;}
+    background:blue;
+}
 
 #game {
     position:absolute;
