@@ -4,23 +4,22 @@ meters_to_pixels = (meters) -> meters * 20
 frame_length = 0.02
 
 class Thing
-    constructor: ({@size, @id}) ->
+    constructor: ({@size, @position, @id}) ->
         all_things[@id] = @
         @element = $ '<div class="player"></div>'
         @element.css
             width:meters_to_pixels @size.x
             height:meters_to_pixels @size.y
+            left:meters_to_pixels(@position.x) + 200
+            top:meters_to_pixels(@position.y) + 200
         game_node.append @element
 
-    update: (position) ->
+    update: (@position) ->
         css = 
-            left:meters_to_pixels(position.x) + 200
-            top:meters_to_pixels(position.y) + 200
+            left:meters_to_pixels(@position.x) + 200
+            top:meters_to_pixels(@position.y) + 200
         css["#{vendor_prefix}-transition"] = "left #{frame_length}s, top #{frame_length}s"
-
         @element.css css
-            
-        #console.log "position: x:#{position.x}, y:#{position.y}"
 
 all_things = {}
 
@@ -46,8 +45,9 @@ $ ->
     ready = false
     subscription = faye.subscribe '/foo', (message) ->
         things = JSON.parse message
-        for id, thing of things
-            all_things[id].update thing.position
+        console.log message
+        for thing in things
+            all_things[thing.id].update thing.position
 
     subscription = faye.subscribe '/player/join', (message) ->
         thing = JSON.parse message

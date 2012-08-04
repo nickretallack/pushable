@@ -13,21 +13,24 @@
   Thing = (function() {
 
     function Thing(_arg) {
-      this.size = _arg.size, this.id = _arg.id;
+      this.size = _arg.size, this.position = _arg.position, this.id = _arg.id;
       all_things[this.id] = this;
       this.element = $('<div class="player"></div>');
       this.element.css({
         width: meters_to_pixels(this.size.x),
-        height: meters_to_pixels(this.size.y)
+        height: meters_to_pixels(this.size.y),
+        left: meters_to_pixels(this.position.x) + 200,
+        top: meters_to_pixels(this.position.y) + 200
       });
       game_node.append(this.element);
     }
 
     Thing.prototype.update = function(position) {
       var css;
+      this.position = position;
       css = {
-        left: meters_to_pixels(position.x) + 200,
-        top: meters_to_pixels(position.y) + 200
+        left: meters_to_pixels(this.position.x) + 200,
+        top: meters_to_pixels(this.position.y) + 200
       };
       css["" + vendor_prefix + "-transition"] = "left " + frame_length + "s, top " + frame_length + "s";
       return this.element.css(css);
@@ -68,12 +71,13 @@
     faye = new Faye.Client('/faye');
     ready = false;
     subscription = faye.subscribe('/foo', function(message) {
-      var id, thing, things, _results;
+      var thing, things, _i, _len, _results;
       things = JSON.parse(message);
+      console.log(message);
       _results = [];
-      for (id in things) {
-        thing = things[id];
-        _results.push(all_things[id].update(thing.position));
+      for (_i = 0, _len = things.length; _i < _len; _i++) {
+        thing = things[_i];
+        _results.push(all_things[thing.id].update(thing.position));
       }
       return _results;
     });

@@ -86,19 +86,37 @@
       return this.body.ApplyForce(direction.scale(speed), this.body.GetPosition());
     };
 
+    Thing.prototype.changes = function() {
+      return {
+        id: this.id,
+        position: this.body.GetPosition()
+      };
+    };
+
     return Thing;
 
   })();
 
   update = function() {
-    var id, player;
+    var changes, id, player, thing;
     for (id in players) {
       player = players[id];
       player.control();
     }
     world.Step(box2d_interval, 10, 10);
     world.ClearForces();
-    return faye_client.publish('/foo', JSON.stringify(things));
+    changes = (function() {
+      var _results;
+      _results = [];
+      for (id in things) {
+        thing = things[id];
+        if (thing.body.IsAwake()) {
+          _results.push(thing.changes());
+        }
+      }
+      return _results;
+    })();
+    return faye_client.publish('/foo', JSON.stringify(changes));
   };
 
   app.get('/objects', function(request, response) {

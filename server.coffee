@@ -55,6 +55,10 @@ class Thing
     force: (direction) ->
         @body.ApplyForce direction.scale(speed), @body.GetPosition()
 
+    changes: ->
+        id:@id
+        position:@body.GetPosition()
+
 
 update = ->
     for id, player of players
@@ -62,7 +66,9 @@ update = ->
 
     world.Step box2d_interval, 10, 10
     world.ClearForces()
-    faye_client.publish '/foo', JSON.stringify things
+
+    changes = (thing.changes() for id, thing of things when thing.body.IsAwake())
+    faye_client.publish '/foo', JSON.stringify changes
 
 app.get '/objects', (request, response) ->
     response.writeHead 200,
