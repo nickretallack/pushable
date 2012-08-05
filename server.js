@@ -105,7 +105,7 @@
       player = players[id];
       player.control();
     }
-    world.Step(box2d_interval, 1, 1);
+    world.Step(box2d_interval, 10, 10);
     world.ClearForces();
     changes = (function() {
       var _results;
@@ -118,8 +118,8 @@
       }
       return _results;
     })();
-    faye_client.publish('/foo', JSON.stringify(changes));
-    return console.log(frame_rate.get_frame_delta());
+    faye_client.publish('/update', JSON.stringify(changes));
+    return console.log(frame_rate.get_frame_delta(interval));
   };
 
   app.get('/objects', function(request, response) {

@@ -1,8 +1,9 @@
 game_node = null
 
 meters_to_pixels = (meters) -> meters * 20
-frame_length = 0.17
-
+frames_per_second = 5
+frame_length = 1.0/frames_per_second
+frame_length_milliseconds = 1000.0/frames_per_second
 
 class Thing
     constructor: ({@size, @position, @id}) ->
@@ -43,10 +44,11 @@ $ ->
     game_node = $ '#game'
     faye = new Faye.Client '/faye'
     ready = false
-    subscription = faye.subscribe '/foo', (message) ->
+    subscription = faye.subscribe '/update', (message) ->
 
         # calculate frame rate
         console.log get_frame_delta()
+        #console.log get_average_deviation frame_length_milliseconds
 
         # update things
         things = JSON.parse message

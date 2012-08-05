@@ -65,12 +65,14 @@ update = ->
     for id, player of players
         player.control()
 
-    world.Step box2d_interval, 1, 1
+    world.Step box2d_interval, 10, 10
     world.ClearForces()
 
     changes = (thing.changes() for id, thing of things when thing.body.IsAwake())
-    faye_client.publish '/foo', JSON.stringify changes
-    console.log frame_rate.get_frame_delta()
+    faye_client.publish '/update', JSON.stringify changes
+
+    console.log frame_rate.get_frame_delta interval
+    #console.log frame_rate.get_average_deviation interval
 
 app.get '/objects', (request, response) ->
     response.writeHead 200,
