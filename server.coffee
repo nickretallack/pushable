@@ -1,23 +1,24 @@
-port = 8000
+port = 8002
 speed = 20
 
-Faye = require 'faye'
-express = require 'express'
 b2d = require 'box2dnode'
-
 UUID = require('./library/uuid').UUID
 V = require('./server_box2d_vector').V
 frame_rate = require './frame_rate'
 
+socket_io = require 'socket.io'
+express = require 'express'
+http = require 'http'
+
+# Create an express/socket.io/http thingy
+app = express()
+server = http.createServer app
+io = socket_io.listen server
+server.listen port
+
 # Setup app
-app = express.createServer()
 app.use express.static __dirname
 app.use express.errorHandler dumpExceptions:true, showStack: true
-
-# Setup socket
-faye = new Faye.NodeAdapter mount:'/faye'
-faye_client = faye.getClient()
-faye.attach app
 
 # registry
 things = {}
@@ -65,7 +66,8 @@ update = ->
     world.ClearForces()
 
     changes = (thing.changes() for id, thing of things when thing.body.IsAwake())
-    faye_client.publish '/update', JSON.stringify changes
+    for id, player of players
+        player.socket.volatile.emit 'update', changes
 
     console.log frame_rate.get_frame_delta()
 
@@ -99,38 +101,21 @@ class Player
         if @commands.down
             @physics.force V 0, +1
 
-get_player = (id) ->
-    if id not of players
-        player = new Player id:id
-        players[id] = player
-        faye_client.publish '/player/join', JSON.stringify player.physics
-    players[id]
+io.sockets.on 'connection', (socket) ->
+    id = UUID()
+    player = new Player id
+    players[id] = player
+    player.socket = socket
 
+    socket.broadcast.emit 'player_join', JSON.stringify player.physics
 
-faye_keyboard =
-    incoming: (message, callback) ->
-        player = get_player message.clientId
-
-        # Eat these messages
-
-        if message.channel is '/commands/activate'
-            player.press message.data
-            return
-
-        if message.channel is '/commands/deactivate'
-            player.release message.data
-            return
-
-        callback message
-
-
-
-faye.addExtension faye_keyboard
-
+    socket.on 'command_activate', (command) ->
+        player.press command
+    socket.on 'command_deactivate', (command) ->
+        player.release command
 
 
 # Get things going
 frame_rate.get_frame_delta()
 setInterval update, frame_rate.frame_length_milliseconds
-app.listen port
 console.log "Listening on #{port}"

@@ -36,43 +36,34 @@ get_command = (event) ->
 
 $ ->
     game_node = $ '#game'
-    faye = new Faye.Client '/faye'
     ready = false
-    subscription = faye.subscribe '/update', (message) ->
 
-        # calculate frame rate
-        console.log frame_rate.get_frame_delta()
-        #console.log get_average_deviation frame_length_milliseconds
-
-        # update things
-        things = JSON.parse message
+    socket = io.connect()
+    socket.on 'update', (things) ->
         for thing in things
             all_things[thing.id].update thing.position
 
-    subscription = faye.subscribe '/player/join', (message) ->
-        thing = JSON.parse message
+        console.log frame_rate.get_frame_delta()
+        #console.log get_average_deviation frame_length_milliseconds
+
+
+    socket.on 'player_join', (thing) ->
         new Thing thing
 
-    subscription.callback ->
+    socket.on 'connect', ->
         frame_rate.get_frame_delta()
         $.get '/state', (state) ->
-
             for id, thing of state.things
                 new Thing thing
 
-    subscription.errback (error) -> console.log "Error: #{error}"
+        $(document).on 'keydown', (event) ->
+            command = get_command event
+            if command? and command not of active_commands
+                active_commands[command] = true
+                socket.emit 'command_activate', command
 
-    $(document).on 'keydown', (event) ->
-        command = get_command event
-        if command? and command not of active_commands
-            active_commands[command] = true
-            faye.publish '/commands/activate', command
-
-    $(document).on 'keyup', (event) ->
-        command = get_command event
-        if command? and command of active_commands
-            delete active_commands[command]
-            faye.publish '/commands/deactivate', command
-
-    #$(document).bind "keydown", (event) -> pressed_keys[key_name(event)] = true
-    #$(document).bind "keyup", (event) -> delete pressed_keys[key_name(event)]
+        $(document).on 'keyup', (event) ->
+            command = get_command event
+            if command? and command of active_commands
+                delete active_commands[command]
+                socket.emit 'command_deactivate', command   

@@ -28,4 +28,4 @@ m.set_frame_rate = (rate) ->
     m.frame_length_seconds = 1.0/m.frames_per_second
     m.frame_length_milliseconds = 1000.0/m.frames_per_second
 
-m.set_frame_rate 5
+m.set_frame_rate 20

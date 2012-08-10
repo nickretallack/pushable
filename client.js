@@ -60,29 +60,24 @@
   };
 
   $(function() {
-    var faye, ready, subscription;
+    var ready, socket;
     game_node = $('#game');
-    faye = new Faye.Client('/faye');
     ready = false;
-    subscription = faye.subscribe('/update', function(message) {
-      var thing, things, _i, _len, _results;
-      console.log(frame_rate.get_frame_delta());
-      things = JSON.parse(message);
-      _results = [];
+    socket = io.connect();
+    socket.on('update', function(things) {
+      var thing, _i, _len;
       for (_i = 0, _len = things.length; _i < _len; _i++) {
         thing = things[_i];
-        _results.push(all_things[thing.id].update(thing.position));
+        all_things[thing.id].update(thing.position);
       }
-      return _results;
+      return console.log(frame_rate.get_frame_delta());
     });
-    subscription = faye.subscribe('/player/join', function(message) {
-      var thing;
-      thing = JSON.parse(message);
+    socket.on('player_join', function(thing) {
       return new Thing(thing);
     });
-    subscription.callback(function() {
+    return socket.on('connect', function() {
       frame_rate.get_frame_delta();
-      return $.get('/state', function(state) {
+      $.get('/state', function(state) {
         var id, thing, _ref, _results;
         _ref = state.things;
         _results = [];
@@ -92,25 +87,22 @@
         }
         return _results;
       });
-    });
-    subscription.errback(function(error) {
-      return console.log("Error: " + error);
-    });
-    $(document).on('keydown', function(event) {
-      var command;
-      command = get_command(event);
-      if ((command != null) && !(command in active_commands)) {
-        active_commands[command] = true;
-        return faye.publish('/commands/activate', command);
-      }
-    });
-    return $(document).on('keyup', function(event) {
-      var command;
-      command = get_command(event);
-      if ((command != null) && command in active_commands) {
-        delete active_commands[command];
-        return faye.publish('/commands/deactivate', command);
-      }
+      $(document).on('keydown', function(event) {
+        var command;
+        command = get_command(event);
+        if ((command != null) && !(command in active_commands)) {
+          active_commands[command] = true;
+          return socket.emit('command_activate', command);
+        }
+      });
+      return $(document).on('keyup', function(event) {
+        var command;
+        command = get_command(event);
+        if ((command != null) && command in active_commands) {
+          delete active_commands[command];
+          return socket.emit('command_deactivate', command);
+        }
+      });
     });
   });
 
