@@ -1,9 +1,6 @@
 game_node = null
 
 meters_to_pixels = (meters) -> meters * 20
-frames_per_second = 5
-frame_length = 1.0/frames_per_second
-frame_length_milliseconds = 1000.0/frames_per_second
 
 class Thing
     constructor: ({@size, @position, @id}) ->
@@ -20,13 +17,10 @@ class Thing
         css = 
             left:meters_to_pixels(@position.x) + 200
             top:meters_to_pixels(@position.y) + 200
-        css["#{vendor_prefix}-transition"] = "left #{frame_length}s, top #{frame_length}s"
+        css["#{vendor_prefix}-transition"] = "left #{frame_rate.frame_length_seconds}s, top #{frame_rate.frame_length_seconds}s"
         @element.css css
 
 all_things = {}
-
-this_frame = {}
-next_frame = {}
     
 commands =
     left:'left'
@@ -47,7 +41,7 @@ $ ->
     subscription = faye.subscribe '/update', (message) ->
 
         # calculate frame rate
-        console.log get_frame_delta()
+        console.log frame_rate.get_frame_delta()
         #console.log get_average_deviation frame_length_milliseconds
 
         # update things
@@ -60,9 +54,10 @@ $ ->
         new Thing thing
 
     subscription.callback ->
-        get_frame_delta()
-        $.get '/objects', (things) ->
-            for id, thing of things
+        frame_rate.get_frame_delta()
+        $.get '/state', (state) ->
+
+            for id, thing of state.things
                 new Thing thing
 
     subscription.errback (error) -> console.log "Error: #{error}"

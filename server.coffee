@@ -1,9 +1,5 @@
 port = 8000
-frames_per_second = 5
 speed = 20
-
-interval = 1000.0/frames_per_second
-box2d_interval = 1.0/frames_per_second
 
 Faye = require 'faye'
 express = require 'express'
@@ -65,19 +61,20 @@ update = ->
     for id, player of players
         player.control()
 
-    world.Step box2d_interval, 10, 10
+    world.Step frame_rate.frame_length_seconds, 10, 10
     world.ClearForces()
 
     changes = (thing.changes() for id, thing of things when thing.body.IsAwake())
     faye_client.publish '/update', JSON.stringify changes
 
-    console.log frame_rate.get_frame_delta interval
-    #console.log frame_rate.get_average_deviation interval
+    console.log frame_rate.get_frame_delta()
 
-app.get '/objects', (request, response) ->
+app.get '/state', (request, response) ->
     response.writeHead 200,
         'Content-Type':'application/json'
-    response.end JSON.stringify things
+    response.end JSON.stringify
+        things:things
+        frame_rate:frame_rate.frames_per_second
 
 players = {}
 
@@ -134,6 +131,6 @@ faye.addExtension faye_keyboard
 
 # Get things going
 frame_rate.get_frame_delta()
-setInterval update, interval
+setInterval update, frame_rate.frame_length_milliseconds
 app.listen port
 console.log "Listening on #{port}"
