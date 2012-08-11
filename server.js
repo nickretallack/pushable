@@ -2,7 +2,7 @@
 (function() {
   var Player, Thing, UUID, V, app, b2d, box_body_def, box_fixture_def, box_shape_def, box_size, express, frame_rate, gravity, http, io, players, port, server, socket_io, speed, things, update, world;
 
-  port = 8002;
+  port = 80;
 
   speed = 20;
 
@@ -172,7 +172,7 @@
     player = new Player(id);
     players[id] = player;
     player.socket = socket;
-    socket.broadcast.emit('player_join', JSON.stringify(player.physics));
+    socket.broadcast.emit('player_join', player.physics);
     socket.on('command_activate', function(command) {
       return player.press(command);
     });

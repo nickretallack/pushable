@@ -1,4 +1,4 @@
-port = 8002
+port = 80
 speed = 20
 
 b2d = require 'box2dnode'
@@ -107,7 +107,7 @@ io.sockets.on 'connection', (socket) ->
     players[id] = player
     player.socket = socket
 
-    socket.broadcast.emit 'player_join', JSON.stringify player.physics
+    socket.broadcast.emit 'player_join', player.physics
 
     socket.on 'command_activate', (command) ->
         player.press command
