@@ -2,7 +2,7 @@
 (function() {
   var Player, Thing, UUID, V, app, b2d, box_body_def, box_fixture_def, box_shape_def, box_size, express, frame_rate, gravity, http, io, players, port, server, socket_io, speed, things, update, world;
 
-  port = 80;
+  port = 8080;
 
   speed = 20;
 
@@ -135,8 +135,8 @@
 
     function Player(_arg) {
       this.id = _arg.id;
-      this.commands = {};
       this.physics = new Thing(this.id);
+      this.clear_commands();
     }
 
     Player.prototype.press = function(command) {
@@ -145,6 +145,10 @@
 
     Player.prototype.release = function(command) {
       return delete this.commands[command];
+    };
+
+    Player.prototype.clear_commands = function() {
+      return this.commands = {};
     };
 
     Player.prototype.control = function() {
@@ -176,8 +180,11 @@
     socket.on('command_activate', function(command) {
       return player.press(command);
     });
-    return socket.on('command_deactivate', function(command) {
+    socket.on('command_deactivate', function(command) {
       return player.release(command);
+    });
+    return socket.on('command_clear', function() {
+      return player.clear_commands();
     });
   });
 

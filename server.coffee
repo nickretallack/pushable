@@ -1,4 +1,4 @@
-port = 80
+port = 8080
 speed = 20
 
 b2d = require 'box2dnode'
@@ -82,14 +82,17 @@ players = {}
 
 class Player
     constructor: ({@id}) ->
-        @commands = {}
         @physics = new Thing @id
+        @clear_commands()
 
     press: (command) ->
         @commands[command] = true
 
     release: (command) ->
         delete @commands[command]
+
+    clear_commands: ->
+        @commands = {}
 
     control: ->
         if @commands.left
@@ -113,7 +116,8 @@ io.sockets.on 'connection', (socket) ->
         player.press command
     socket.on 'command_deactivate', (command) ->
         player.release command
-
+    socket.on 'command_clear', ->
+        player.clear_commands()
 
 # Get things going
 frame_rate.get_frame_delta()

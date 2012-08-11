@@ -34,11 +34,18 @@ get_command = (event) ->
     key = get_key_name event
     commands[key]
 
+socket = null
 $ ->
     game_node = $ '#game'
-    ready = false
-
     socket = io.connect()
+    socket.on 'connect', ->
+        frame_rate.get_frame_delta()
+        $.get '/state', (state) ->
+            for id, thing of state.things
+                new Thing thing
+            ready()
+
+ready = ->
     socket.on 'update', (things) ->
         for thing in things
             all_things[thing.id].update thing.position
@@ -46,24 +53,20 @@ $ ->
         console.log frame_rate.get_frame_delta()
         #console.log get_average_deviation frame_length_milliseconds
 
-
     socket.on 'player_join', (thing) ->
         new Thing thing
 
-    socket.on 'connect', ->
-        frame_rate.get_frame_delta()
-        $.get '/state', (state) ->
-            for id, thing of state.things
-                new Thing thing
+    $(document).on 'keydown', (event) ->
+        command = get_command event
+        if command? and command not of active_commands
+            active_commands[command] = true
+            socket.emit 'command_activate', command
 
-        $(document).on 'keydown', (event) ->
-            command = get_command event
-            if command? and command not of active_commands
-                active_commands[command] = true
-                socket.emit 'command_activate', command
+    $(document).on 'keyup', (event) ->
+        command = get_command event
+        if command? and command of active_commands
+            delete active_commands[command]
+            socket.emit 'command_deactivate', command
 
-        $(document).on 'keyup', (event) ->
-            command = get_command event
-            if command? and command of active_commands
-                delete active_commands[command]
-                socket.emit 'command_deactivate', command   
+    $(window).on 'blur', (event) ->
+        socket.emit 'command_clear'
