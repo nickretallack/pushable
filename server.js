@@ -2,7 +2,7 @@
 (function() {
   var Player, Thing, UUID, V, app, b2d, box_body_def, box_fixture_def, box_shape_def, box_size, express, frame_rate, gravity, http, io, players, port, server, socket_io, speed, things, update, world;
 
-  port = 8080;
+  port = 8003;
 
   speed = 20;
 

@@ -1,4 +1,4 @@
-port = 8080
+port = 8003
 speed = 20
 
 b2d = require 'box2dnode'
