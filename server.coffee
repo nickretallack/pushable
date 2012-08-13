@@ -19,9 +19,8 @@ server.listen port
 # Setup app
 app.use express.static __dirname
 app.use express.errorHandler dumpExceptions:true, showStack: true
+io.set 'log level', 1
 
-# registry
-things = {}
 
 # make the world
 gravity = V 0, 0 #-9.8
@@ -39,6 +38,7 @@ box_fixture_def.density = 1.0
 box_fixture_def.friction = 0.3
 box_body_def.linearDamping = 1
 
+things = {}
 class Thing
     constructor:(@id=UUID())->
         @body = world.CreateBody box_body_def
@@ -57,6 +57,9 @@ class Thing
         id:@id
         position:@body.GetPosition()
 
+    remove: ->
+        world.DestroyBody @body
+        delete things[@id]
 
 update = ->
     for id, player of players
@@ -69,7 +72,7 @@ update = ->
     for id, player of players
         player.socket.volatile.emit 'update', changes
 
-    console.log frame_rate.get_frame_delta()
+    #console.log frame_rate.get_frame_delta()
 
 app.get '/state', (request, response) ->
     response.writeHead 200,
@@ -79,11 +82,11 @@ app.get '/state', (request, response) ->
         frame_rate:frame_rate.frames_per_second
 
 players = {}
-
 class Player
-    constructor: ({@id}) ->
+    constructor: (@id=UUID()) ->
         @physics = new Thing @id
         @clear_commands()
+        players[@id] = @
 
     press: (command) ->
         @commands[command] = true
@@ -104,10 +107,12 @@ class Player
         if @commands.down
             @physics.force V 0, +1
 
+    remove: ->
+        delete players[@id]
+        @physics.remove()
+
 io.sockets.on 'connection', (socket) ->
-    id = UUID()
-    player = new Player id
-    players[id] = player
+    player = new Player
     player.socket = socket
 
     socket.broadcast.emit 'player_join', player.physics
@@ -119,7 +124,11 @@ io.sockets.on 'connection', (socket) ->
     socket.on 'command_clear', ->
         player.clear_commands()
 
+    socket.on 'disconnect', ->
+        socket.broadcast.emit 'player_leave', player.physics.id
+        player.remove()
+
 # Get things going
-frame_rate.get_frame_delta()
+#frame_rate.get_frame_delta()
 setInterval update, frame_rate.frame_length_milliseconds
 console.log "Listening on #{port}"

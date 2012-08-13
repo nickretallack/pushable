@@ -34,6 +34,11 @@
       return this.element.css(css);
     };
 
+    Thing.prototype.remove = function() {
+      this.element.remove();
+      return delete all_things[this.id];
+    };
+
     return Thing;
 
   })();
@@ -80,15 +85,19 @@
 
   ready = function() {
     socket.on('update', function(things) {
-      var thing, _i, _len;
+      var thing, _i, _len, _results;
+      _results = [];
       for (_i = 0, _len = things.length; _i < _len; _i++) {
         thing = things[_i];
-        all_things[thing.id].update(thing.position);
+        _results.push(all_things[thing.id].update(thing.position));
       }
-      return console.log(frame_rate.get_frame_delta());
+      return _results;
     });
     socket.on('player_join', function(thing) {
       return new Thing(thing);
+    });
+    socket.on('player_leave', function(id) {
+      return all_things[id].remove();
     });
     $(document).on('keydown', function(event) {
       var command;

@@ -35,7 +35,7 @@
     showStack: true
   }));
 
-  things = {};
+  io.set('log level', 1);
 
   gravity = V(0, 0);
 
@@ -60,6 +60,8 @@
   box_fixture_def.friction = 0.3;
 
   box_body_def.linearDamping = 1;
+
+  things = {};
 
   Thing = (function() {
 
@@ -89,12 +91,17 @@
       };
     };
 
+    Thing.prototype.remove = function() {
+      world.DestroyBody(this.body);
+      return delete things[this.id];
+    };
+
     return Thing;
 
   })();
 
   update = function() {
-    var changes, id, player, thing;
+    var changes, id, player, thing, _results;
     for (id in players) {
       player = players[id];
       player.control();
@@ -112,11 +119,12 @@
       }
       return _results;
     })();
+    _results = [];
     for (id in players) {
       player = players[id];
-      player.socket.volatile.emit('update', changes);
+      _results.push(player.socket.volatile.emit('update', changes));
     }
-    return console.log(frame_rate.get_frame_delta());
+    return _results;
   };
 
   app.get('/state', function(request, response) {
@@ -133,10 +141,11 @@
 
   Player = (function() {
 
-    function Player(_arg) {
-      this.id = _arg.id;
+    function Player(id) {
+      this.id = id != null ? id : UUID();
       this.physics = new Thing(this.id);
       this.clear_commands();
+      players[this.id] = this;
     }
 
     Player.prototype.press = function(command) {
@@ -166,15 +175,18 @@
       }
     };
 
+    Player.prototype.remove = function() {
+      delete players[this.id];
+      return this.physics.remove();
+    };
+
     return Player;
 
   })();
 
   io.sockets.on('connection', function(socket) {
-    var id, player;
-    id = UUID();
-    player = new Player(id);
-    players[id] = player;
+    var player;
+    player = new Player;
     player.socket = socket;
     socket.broadcast.emit('player_join', player.physics);
     socket.on('command_activate', function(command) {
@@ -183,12 +195,14 @@
     socket.on('command_deactivate', function(command) {
       return player.release(command);
     });
-    return socket.on('command_clear', function() {
+    socket.on('command_clear', function() {
       return player.clear_commands();
     });
+    return socket.on('disconnect', function() {
+      socket.broadcast.emit('player_leave', player.physics.id);
+      return player.remove();
+    });
   });
-
-  frame_rate.get_frame_delta();
 
   setInterval(update, frame_rate.frame_length_milliseconds);
 

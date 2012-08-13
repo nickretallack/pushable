@@ -20,6 +20,10 @@ class Thing
         css["#{vendor_prefix}-transition"] = "left #{frame_rate.frame_length_seconds}s, top #{frame_rate.frame_length_seconds}s"
         @element.css css
 
+    remove: ->
+        @element.remove()
+        delete all_things[@id]
+
 all_things = {}
     
 commands =
@@ -50,11 +54,14 @@ ready = ->
         for thing in things
             all_things[thing.id].update thing.position
 
-        console.log frame_rate.get_frame_delta()
+        #console.log frame_rate.get_frame_delta()
         #console.log get_average_deviation frame_length_milliseconds
 
     socket.on 'player_join', (thing) ->
         new Thing thing
+
+    socket.on 'player_leave', (id) ->
+        all_things[id].remove()
 
     $(document).on 'keydown', (event) ->
         command = get_command event
