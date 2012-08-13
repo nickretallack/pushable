@@ -11,6 +11,7 @@ class Thing
             height:meters_to_pixels @size.y
             left:meters_to_pixels(@position.x) + 200
             top:meters_to_pixels(@position.y) + 200
+            'background-color':"##{@id[...6]}"
         game_node.append @element
 
     update: (@position) ->

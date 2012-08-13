@@ -18,7 +18,8 @@
         width: meters_to_pixels(this.size.x),
         height: meters_to_pixels(this.size.y),
         left: meters_to_pixels(this.position.x) + 200,
-        top: meters_to_pixels(this.position.y) + 200
+        top: meters_to_pixels(this.position.y) + 200,
+        'background-color': "#" + this.id.slice(0, 6)
       });
       game_node.append(this.element);
     }
