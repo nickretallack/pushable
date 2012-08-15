@@ -1,3 +1,18 @@
+module = angular.module 'game', []
+
+module.config ($routeProvider) ->
+    $routeProvider.when '/', templateUrl:'home', controller:'home'
+    $routeProvider.when '/room/:room_id', templateUrl:'game', controller:'game'
+
+module.controller 'home', ($scope, $location) ->
+    $scope.new_game = ->
+        $location.path "#/room/#{UUID()}"
+
+module.controller 'game', ($scope) ->
+
+
+
+
 game_node = null
 
 meters_to_pixels = (meters) -> meters * 20
@@ -40,6 +55,7 @@ get_command = (event) ->
     commands[key]
 
 socket = null
+###
 $ ->
     game_node = $ '#game'
     socket = io.connect()
@@ -49,7 +65,7 @@ $ ->
             for id, thing of state.things
                 new Thing thing
             ready()
-
+###
 ready = ->
     socket.on 'update', (things) ->
         for thing in things

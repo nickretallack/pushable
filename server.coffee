@@ -81,6 +81,10 @@ app.get '/state', (request, response) ->
         things:things
         frame_rate:frame_rate.frames_per_second
 
+app.get '/room/:room', (request, response) ->
+    response.writeHead 200
+    response.end 
+
 players = {}
 class Player
     constructor: (@id=UUID()) ->

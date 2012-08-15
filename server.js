@@ -137,6 +137,11 @@
     }));
   });
 
+  app.get('/room/:room', function(request, response) {
+    response.writeHead(200);
+    return response.end;
+  });
+
   players = {};
 
   Player = (function() {

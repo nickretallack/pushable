@@ -1,20 +1,29 @@
 <!doctype html>
-<html>
+<html ng-app="game">
 <head>
 <link rel="stylesheet" href="style.css">
+<script src="/library/angular-1.0.1.js"></script>
+<script src="/library/jquery.js"></script>
+<script src="/library/keycodes.js"></script>
+<script src="/library/keydown.js"></script>
+<script src="/library/uuid.js"></script>
 <script src="/socket.io/socket.io.js"></script>
-<script src="library/jquery.js"></script>
-<script src="library/keycodes.js"></script>
-<script src="library/keydown.js"></script>
 <script src="sniff.js"></script>
 <script src="frame_rate.js"></script>
 <script src="client.js"></script>
+
+<script type="text/ng-template" id="home">
+<a ng-click="new_game()">New Game</a>
+This is the front page.
+</script>
+
+<script type="text/ng-template" id="game">
+<div id="game"></div>
+</script>
+
+
 </head>
 <body>
-<div id="game">
-
-
-
-</div>
+<ng-view></ng-view>
 </body>
 </html>
