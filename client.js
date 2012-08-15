@@ -15,13 +15,47 @@
     });
   });
 
-  module.controller('home', function($scope, $location) {
+  module.run(function($rootScope, socket) {
+    var $scope;
+    $scope = $rootScope;
     return $scope.new_game = function() {
       return $location.path("#/room/" + (UUID()));
     };
   });
 
+  module.controller('home', function($scope, $location) {});
+
   module.controller('game', function($scope) {});
+
+  module.factory('socket', function() {
+    return io.connect();
+  });
+
+  module.directive('chat', function() {
+    return {
+      template: "<div>\n    <ul>\n        <li ng-repeat=\"message in messages\">\n            {{message.user_name}}: {{message.text}}\n        </li>\n    </ul>\n    <form ng-submit=\"chat()\">\n        <input ng-model=\"chat_message\">\n    </form>\n</div>",
+      replace: true,
+      link: function() {
+        return console.log('wtf');
+      },
+      controller: function($scope, socket) {
+        $scope.messages = [];
+        $scope.chat = function() {
+          socket.emit('chat', $scope.chat_message);
+          $scope.messages.push({
+            text: $scope.chat_message,
+            user_name: 'me'
+          });
+          return $scope.chat_message = '';
+        };
+        return socket.on('chat', function(message) {
+          return $scope.$apply(function() {
+            return $scope.messages.push(message);
+          });
+        });
+      }
+    };
+  });
 
   game_node = null;
 

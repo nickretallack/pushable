@@ -4,13 +4,47 @@ module.config ($routeProvider) ->
     $routeProvider.when '/', templateUrl:'home', controller:'home'
     $routeProvider.when '/room/:room_id', templateUrl:'game', controller:'game'
 
-module.controller 'home', ($scope, $location) ->
+module.run ($rootScope, socket) ->
+    $scope = $rootScope
     $scope.new_game = ->
         $location.path "#/room/#{UUID()}"
+
+
+module.controller 'home', ($scope, $location) ->
 
 module.controller 'game', ($scope) ->
 
 
+module.factory 'socket', -> io.connect()
+
+
+module.directive 'chat', ->
+    template:"""
+    <div>
+        <ul>
+            <li ng-repeat="message in messages">
+                {{message.user_name}}: {{message.text}}
+            </li>
+        </ul>
+        <form ng-submit="chat()">
+            <input ng-model="chat_message">
+        </form>
+    </div>
+    """
+    replace:true
+    link: ->
+        console.log 'wtf'
+    controller: ($scope, socket) ->
+        $scope.messages = []
+        $scope.chat = ->
+            socket.emit 'chat', $scope.chat_message
+            $scope.messages.push
+                text:$scope.chat_message
+                user_name:'me'
+            $scope.chat_message = ''
+
+        socket.on 'chat', (message) -> $scope.$apply ->
+            $scope.messages.push message
 
 
 game_node = null

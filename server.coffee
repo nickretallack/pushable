@@ -91,6 +91,7 @@ class Player
         @physics = new Thing @id
         @clear_commands()
         players[@id] = @
+        @name = @id
 
     press: (command) ->
         @commands[command] = true
@@ -120,6 +121,12 @@ io.sockets.on 'connection', (socket) ->
     player.socket = socket
 
     socket.broadcast.emit 'player_join', player.physics
+
+    socket.on 'chat', (text) ->
+        socket.broadcast.emit 'chat',
+            user_id:player.id
+            user_name:player.name
+            text:text
 
     socket.on 'command_activate', (command) ->
         player.press command

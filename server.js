@@ -151,6 +151,7 @@
       this.physics = new Thing(this.id);
       this.clear_commands();
       players[this.id] = this;
+      this.name = this.id;
     }
 
     Player.prototype.press = function(command) {
@@ -194,6 +195,13 @@
     player = new Player;
     player.socket = socket;
     socket.broadcast.emit('player_join', player.physics);
+    socket.on('chat', function(text) {
+      return socket.broadcast.emit('chat', {
+        user_id: player.id,
+        user_name: player.name,
+        text: text
+      });
+    });
     socket.on('command_activate', function(command) {
       return player.press(command);
     });
