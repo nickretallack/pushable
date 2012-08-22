@@ -124,8 +124,9 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'chat', (text) ->
         socket.broadcast.emit 'chat',
-            user_id:player.id
-            user_name:player.name
+            user:
+                id:player.id
+                name:player.name
             text:text
 
     socket.on 'command_activate', (command) ->

@@ -18,22 +18,31 @@ module.controller 'game', ($scope) ->
 module.factory 'socket', -> io.connect()
 
 
+class User
+    constructor:(@id) ->
+
+
+
 module.directive 'chat', ->
     template:"""
     <div>
         <ul>
             <li ng-repeat="message in messages">
-                {{message.user_name}}: {{message.text}}
+                <a ng-click="select_user(message.user)">{{message.user.name}}</a>: {{message.text}}
             </li>
         </ul>
         <form ng-submit="chat()">
             <input ng-model="chat_message">
         </form>
+
+        <ul>
+            <li ng-repeat="user in users">
+                <a>{{user.name}}</a>
+            </li>
+        </ul>
     </div>
     """
     replace:true
-    link: ->
-        console.log 'wtf'
     controller: ($scope, socket) ->
         $scope.messages = []
         $scope.chat = ->
@@ -44,7 +53,12 @@ module.directive 'chat', ->
             $scope.chat_message = ''
 
         socket.on 'chat', (message) -> $scope.$apply ->
+            message.user = new User message.user
             $scope.messages.push message
+
+        $scope.select_user (user) ->
+            $scope.$emit 'select-user', user
+
 
 
 game_node = null
