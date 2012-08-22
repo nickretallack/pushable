@@ -15,11 +15,24 @@ module.controller 'home', ($scope, $location) ->
 module.controller 'game', ($scope) ->
 
 
-module.factory 'socket', -> io.connect()
+module.factory 'socket', ($q, $rootScope) ->
+    # Currently overloaded to handle the current user.
+    # In the future this may be handled elsewhere
+    socket = io.connect()
+    deferred_identity = $q.defer()
+    socket.identity_promise = deferred_identity.promise
+    socket.on 'user_identity', (user_data) -> $rootScope.$apply ->
+        user =  new User user_data
+        deferred_identity.resolve user
+        socket.identity = user
+    socket
 
 
 class User
     constructor:({@id, @name}) ->
+
+module.factory 'you', (socket) ->
+    -> socket.identity
 
 module.factory 'users', ($http, socket, $rootScope) ->
     all_users = []
@@ -33,19 +46,27 @@ module.factory 'users', ($http, socket, $rootScope) ->
     socket.on 'user_leave', (user_id) -> $rootScope.$apply ->
         all_users = (user for user in all_users when user.id isnt user_id) #_.filter all_users, (user) -> user.id is user_id
 
+    socket.identity_promise.then (user) ->
+        all_users.push user
+
     get: -> all_users
 
 module.directive 'userList', ->
     template:"""
     <ul>
         <li ng-repeat="user in get_users()">
-            <a>{{user.name}}</a>
+            <div ng-switch="is_you(user)">
+                <div ng-switch-when="true">{{user.name}} (you)</div>
+                <div ng-switch-when="false"><a>{{user.name}}</a></div>
+            </div>
         </li>
     </ul>
     """
     replace:true
-    controller: ($scope, users) ->
+    controller: ($scope, users, socket) ->
         $scope.get_users = users.get
+        $scope.is_you = (user) ->
+            user is socket.identity
 
 module.directive 'chat', ->
     template:"""

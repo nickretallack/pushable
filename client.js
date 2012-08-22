@@ -27,8 +27,20 @@
 
   module.controller('game', function($scope) {});
 
-  module.factory('socket', function() {
-    return io.connect();
+  module.factory('socket', function($q, $rootScope) {
+    var deferred_identity, socket;
+    socket = io.connect();
+    deferred_identity = $q.defer();
+    socket.identity_promise = deferred_identity.promise;
+    socket.on('user_identity', function(user_data) {
+      return $rootScope.$apply(function() {
+        var user;
+        user = new User(user_data);
+        deferred_identity.resolve(user);
+        return socket.identity = user;
+      });
+    });
+    return socket;
   });
 
   User = (function() {
@@ -40,6 +52,12 @@
     return User;
 
   })();
+
+  module.factory('you', function(socket) {
+    return function() {
+      return socket.identity;
+    };
+  });
 
   module.factory('users', function($http, socket, $rootScope) {
     var all_users, request;
@@ -78,6 +96,9 @@
         })();
       });
     });
+    socket.identity_promise.then(function(user) {
+      return all_users.push(user);
+    });
     return {
       get: function() {
         return all_users;
@@ -87,10 +108,13 @@
 
   module.directive('userList', function() {
     return {
-      template: "<ul>\n    <li ng-repeat=\"user in get_users()\">\n        <a>{{user.name}}</a>\n    </li>\n</ul>",
+      template: "<ul>\n    <li ng-repeat=\"user in get_users()\">\n        <div ng-switch=\"is_you(user)\">\n            <div ng-switch-when=\"true\">{{user.name}} (you)</div>\n            <div ng-switch-when=\"false\"><a>{{user.name}}</a></div>\n        </div>\n    </li>\n</ul>",
       replace: true,
-      controller: function($scope, users) {
-        return $scope.get_users = users.get;
+      controller: function($scope, users, socket) {
+        $scope.get_users = users.get;
+        return $scope.is_you = function(user) {
+          return user === socket.identity;
+        };
       }
     };
   });

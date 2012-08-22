@@ -232,6 +232,7 @@
     var user;
     user = new User;
     socket.broadcast.emit('user_join', user);
+    socket.emit('user_identity', user);
     socket.on('chat', function(text) {
       return socket.broadcast.emit('chat', {
         user: user,

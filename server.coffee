@@ -141,6 +141,7 @@ app.get '/users/', (request, response) ->
 io.sockets.on 'connection', (socket) ->
     user = new User
     socket.broadcast.emit 'user_join', user
+    socket.emit 'user_identity', user
 
     socket.on 'chat', (text) ->
         socket.broadcast.emit 'chat',
