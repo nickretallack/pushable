@@ -19,9 +19,33 @@ module.factory 'socket', -> io.connect()
 
 
 class User
-    constructor:(@id) ->
+    constructor:({@id, @name}) ->
 
+module.factory 'users', ($http, socket, $rootScope) ->
+    all_users = []
+    request = $http.get '/users/'
+    request.success (users) ->
+        all_users = (new User user for user in users)
 
+    socket.on 'user_join', (user) -> $rootScope.$apply ->
+        all_users.push new User user
+
+    socket.on 'user_leave', (user_id) -> $rootScope.$apply ->
+        all_users = (user for user in all_users when user.id isnt user_id) #_.filter all_users, (user) -> user.id is user_id
+
+    get: -> all_users
+
+module.directive 'userList', ->
+    template:"""
+    <ul>
+        <li ng-repeat="user in get_users()">
+            <a>{{user.name}}</a>
+        </li>
+    </ul>
+    """
+    replace:true
+    controller: ($scope, users) ->
+        $scope.get_users = users.get
 
 module.directive 'chat', ->
     template:"""
@@ -34,29 +58,25 @@ module.directive 'chat', ->
         <form ng-submit="chat()">
             <input ng-model="chat_message">
         </form>
-
-        <ul>
-            <li ng-repeat="user in users">
-                <a>{{user.name}}</a>
-            </li>
-        </ul>
     </div>
     """
     replace:true
-    controller: ($scope, socket) ->
+    controller: ($scope, socket, users) ->
         $scope.messages = []
         $scope.chat = ->
             socket.emit 'chat', $scope.chat_message
             $scope.messages.push
                 text:$scope.chat_message
-                user_name:'me'
+                user:
+                    name:'me'
+                    id:'me'
             $scope.chat_message = ''
 
         socket.on 'chat', (message) -> $scope.$apply ->
             message.user = new User message.user
             $scope.messages.push message
 
-        $scope.select_user (user) ->
+        $scope.select_user = (user) ->
             $scope.$emit 'select-user', user
 
 

@@ -1,6 +1,7 @@
 port = 8003
 speed = 20
 
+_ = require 'underscore'
 b2d = require 'box2dnode'
 UUID = require('./library/uuid').UUID
 V = require('./server_box2d_vector').V
@@ -85,6 +86,11 @@ app.get '/room/:room', (request, response) ->
     response.writeHead 200
     response.end 
 
+json_response = (response, object) ->
+    response.writeHead 200,
+        'Content-Type':'application/json'
+    response.end JSON.stringify object
+
 players = {}
 class Player
     constructor: (@id=UUID()) ->
@@ -116,19 +122,36 @@ class Player
         delete players[@id]
         @physics.remove()
 
-io.sockets.on 'connection', (socket) ->
-    player = new Player
-    player.socket = socket
+users = {}
+class User
+    constructor: (@id=UUID()) ->
+        @name = @id
+        users[@id] = @
 
-    socket.broadcast.emit 'player_join', player.physics
+    remove: ->
+        delete users[@id]
+
+    toJSON: ->
+        id:@id
+        name:@name
+
+app.get '/users/', (request, response) ->
+    json_response response, _.values users
+
+io.sockets.on 'connection', (socket) ->
+    user = new User
+    socket.broadcast.emit 'user_join', user
 
     socket.on 'chat', (text) ->
         socket.broadcast.emit 'chat',
-            user:
-                id:player.id
-                name:player.name
+            user:user
             text:text
 
+    socket.on 'disconnect', ->
+        socket.broadcast.emit 'user_leave', user.id
+        user.remove()
+
+    ###
     socket.on 'command_activate', (command) ->
         player.press command
     socket.on 'command_deactivate', (command) ->
@@ -139,6 +162,7 @@ io.sockets.on 'connection', (socket) ->
     socket.on 'disconnect', ->
         socket.broadcast.emit 'player_leave', player.physics.id
         player.remove()
+    ###
 
 # Get things going
 #frame_rate.get_frame_delta()

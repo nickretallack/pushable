@@ -33,25 +33,82 @@
 
   User = (function() {
 
-    function User(id) {
-      this.id = id;
+    function User(_arg) {
+      this.id = _arg.id, this.name = _arg.name;
     }
 
     return User;
 
   })();
 
+  module.factory('users', function($http, socket, $rootScope) {
+    var all_users, request;
+    all_users = [];
+    request = $http.get('/users/');
+    request.success(function(users) {
+      var user;
+      return all_users = (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = users.length; _i < _len; _i++) {
+          user = users[_i];
+          _results.push(new User(user));
+        }
+        return _results;
+      })();
+    });
+    socket.on('user_join', function(user) {
+      return $rootScope.$apply(function() {
+        return all_users.push(new User(user));
+      });
+    });
+    socket.on('user_leave', function(user_id) {
+      return $rootScope.$apply(function() {
+        var user;
+        return all_users = (function() {
+          var _i, _len, _results;
+          _results = [];
+          for (_i = 0, _len = all_users.length; _i < _len; _i++) {
+            user = all_users[_i];
+            if (user.id !== user_id) {
+              _results.push(user);
+            }
+          }
+          return _results;
+        })();
+      });
+    });
+    return {
+      get: function() {
+        return all_users;
+      }
+    };
+  });
+
+  module.directive('userList', function() {
+    return {
+      template: "<ul>\n    <li ng-repeat=\"user in get_users()\">\n        <a>{{user.name}}</a>\n    </li>\n</ul>",
+      replace: true,
+      controller: function($scope, users) {
+        return $scope.get_users = users.get;
+      }
+    };
+  });
+
   module.directive('chat', function() {
     return {
-      template: "<div>\n    <ul>\n        <li ng-repeat=\"message in messages\">\n            <a ng-click=\"select_user(message.user)\">{{message.user.name}}</a>: {{message.text}}\n        </li>\n    </ul>\n    <form ng-submit=\"chat()\">\n        <input ng-model=\"chat_message\">\n    </form>\n\n    <ul>\n        <li ng-repeat=\"user in users\">\n            <a>{{user.name}}</a>\n        </li>\n    </ul>\n</div>",
+      template: "<div>\n    <ul>\n        <li ng-repeat=\"message in messages\">\n            <a ng-click=\"select_user(message.user)\">{{message.user.name}}</a>: {{message.text}}\n        </li>\n    </ul>\n    <form ng-submit=\"chat()\">\n        <input ng-model=\"chat_message\">\n    </form>\n</div>",
       replace: true,
-      controller: function($scope, socket) {
+      controller: function($scope, socket, users) {
         $scope.messages = [];
         $scope.chat = function() {
           socket.emit('chat', $scope.chat_message);
           $scope.messages.push({
             text: $scope.chat_message,
-            user_name: 'me'
+            user: {
+              name: 'me',
+              id: 'me'
+            }
           });
           return $scope.chat_message = '';
         };
@@ -61,9 +118,9 @@
             return $scope.messages.push(message);
           });
         });
-        return $scope.select_user(function(user) {
+        return $scope.select_user = function(user) {
           return $scope.$emit('select-user', user);
-        });
+        };
       }
     };
   });
