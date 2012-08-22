@@ -49,7 +49,8 @@ module.factory 'users', ($http, socket, $rootScope) ->
     socket.identity_promise.then (user) ->
         all_users.push user
 
-    get: -> all_users
+    all: -> all_users
+    get: (id) -> _.find all_users, (user) -> user.id is id
 
 module.directive 'userList', ->
     template:"""
@@ -57,23 +58,58 @@ module.directive 'userList', ->
         <li ng-repeat="user in get_users()">
             <div ng-switch="is_you(user)">
                 <div ng-switch-when="true">{{user.name}} (you)</div>
-                <div ng-switch-when="false"><a>{{user.name}}</a></div>
+                <div ng-switch-when="false">
+                    <a ng-click="challenge(user)">challenge {{user.name}}</a>
+                </div>
             </div>
         </li>
     </ul>
     """
     replace:true
     controller: ($scope, users, socket) ->
-        $scope.get_users = users.get
+        $scope.get_users = users.all
         $scope.is_you = (user) ->
             user is socket.identity
+        $scope.challenge = (user) ->
+            socket.emit 'send_challenge', user.id
+
+
+module.factory 'models', (users) ->
+    class Challenge
+        constructor: ({@id, challenger_id, challengee_id}) ->
+            @challenger = users.get challenger_id
+            @challengee = users.get challengee_id
+
+    class Message
+        constructor: ({@text, user_id}) ->
+            @user = users.get user_id
+
+    Challenge:Challenge
+    Message:Message
+    User:User
+
+module.filter 'isa', (models) ->
+    (object, type) -> object instanceof models[type]
+
+module.filter 'messagetype', (models) ->
+    (object) ->
+        if object instanceof models.Message then 'message'
+        else if object instanceof models.Challenge then 'challenge'
 
 module.directive 'chat', ->
     template:"""
     <div>
         <ul>
             <li ng-repeat="message in messages">
-                <a ng-click="select_user(message.user)">{{message.user.name}}</a>: {{message.text}}
+                <div ng-switch="message|messagetype">
+                    <div ng-switch-when="message">
+                        <a ng-click="select_user(message.user)">{{message.user.name}}</a>: {{message.text}}
+                    </div>
+                    <div ng-switch-when="challenge">
+                        {{message.challenger.name}} has challenged you to a game.
+                        <a ng-click="accept_challenge(message)">Accept?</a>
+                    </div>
+                </div>
             </li>
         </ul>
         <form ng-submit="chat()">
@@ -82,23 +118,27 @@ module.directive 'chat', ->
     </div>
     """
     replace:true
-    controller: ($scope, socket, users) ->
+    controller: ($scope, socket, users, models) ->
         $scope.messages = []
         $scope.chat = ->
             socket.emit 'chat', $scope.chat_message
-            $scope.messages.push
+            $scope.messages.push new models.Message
                 text:$scope.chat_message
-                user:
-                    name:'me'
-                    id:'me'
+                user:socket.identity
             $scope.chat_message = ''
 
         socket.on 'chat', (message) -> $scope.$apply ->
             message.user = new User message.user
             $scope.messages.push message
 
+        socket.on 'got_challenge', (challenge) -> $scope.$apply ->
+            $scope.messages.push new models.Challenge challenge
+
         $scope.select_user = (user) ->
             $scope.$emit 'select-user', user
+
+        $scope.accept_challenge = (challenge) ->
+            socket.emit 'accept_challenge', challenge.id
 
 
 

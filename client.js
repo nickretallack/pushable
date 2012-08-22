@@ -100,40 +100,93 @@
       return all_users.push(user);
     });
     return {
-      get: function() {
+      all: function() {
         return all_users;
+      },
+      get: function(id) {
+        return _.find(all_users, function(user) {
+          return user.id === id;
+        });
       }
     };
   });
 
   module.directive('userList', function() {
     return {
-      template: "<ul>\n    <li ng-repeat=\"user in get_users()\">\n        <div ng-switch=\"is_you(user)\">\n            <div ng-switch-when=\"true\">{{user.name}} (you)</div>\n            <div ng-switch-when=\"false\"><a>{{user.name}}</a></div>\n        </div>\n    </li>\n</ul>",
+      template: "<ul>\n    <li ng-repeat=\"user in get_users()\">\n        <div ng-switch=\"is_you(user)\">\n            <div ng-switch-when=\"true\">{{user.name}} (you)</div>\n            <div ng-switch-when=\"false\">\n                <a ng-click=\"challenge(user)\">challenge {{user.name}}</a>\n            </div>\n        </div>\n    </li>\n</ul>",
       replace: true,
       controller: function($scope, users, socket) {
-        $scope.get_users = users.get;
-        return $scope.is_you = function(user) {
+        $scope.get_users = users.all;
+        $scope.is_you = function(user) {
           return user === socket.identity;
         };
+        return $scope.challenge = function(user) {
+          return socket.emit('send_challenge', user.id);
+        };
+      }
+    };
+  });
+
+  module.factory('models', function(users) {
+    var Challenge, Message;
+    Challenge = (function() {
+
+      function Challenge(_arg) {
+        var challengee_id, challenger_id;
+        this.id = _arg.id, challenger_id = _arg.challenger_id, challengee_id = _arg.challengee_id;
+        this.challenger = users.get(challenger_id);
+        this.challengee = users.get(challengee_id);
+      }
+
+      return Challenge;
+
+    })();
+    Message = (function() {
+
+      function Message(_arg) {
+        var user_id;
+        this.text = _arg.text, user_id = _arg.user_id;
+        this.user = users.get(user_id);
+      }
+
+      return Message;
+
+    })();
+    return {
+      Challenge: Challenge,
+      Message: Message,
+      User: User
+    };
+  });
+
+  module.filter('isa', function(models) {
+    return function(object, type) {
+      return object instanceof models[type];
+    };
+  });
+
+  module.filter('messagetype', function(models) {
+    return function(object) {
+      if (object instanceof models.Message) {
+        return 'message';
+      } else if (object instanceof models.Challenge) {
+        return 'challenge';
       }
     };
   });
 
   module.directive('chat', function() {
     return {
-      template: "<div>\n    <ul>\n        <li ng-repeat=\"message in messages\">\n            <a ng-click=\"select_user(message.user)\">{{message.user.name}}</a>: {{message.text}}\n        </li>\n    </ul>\n    <form ng-submit=\"chat()\">\n        <input ng-model=\"chat_message\">\n    </form>\n</div>",
+      template: "<div>\n    <ul>\n        <li ng-repeat=\"message in messages\">\n            <div ng-switch=\"message|messagetype\">\n                <div ng-switch-when=\"message\">\n                    <a ng-click=\"select_user(message.user)\">{{message.user.name}}</a>: {{message.text}}\n                </div>\n                <div ng-switch-when=\"challenge\">\n                    {{message.challenger.name}} has challenged you to a game.\n                    <a ng-click=\"accept_challenge(message)\">Accept?</a>\n                </div>\n            </div>\n        </li>\n    </ul>\n    <form ng-submit=\"chat()\">\n        <input ng-model=\"chat_message\">\n    </form>\n</div>",
       replace: true,
-      controller: function($scope, socket, users) {
+      controller: function($scope, socket, users, models) {
         $scope.messages = [];
         $scope.chat = function() {
           socket.emit('chat', $scope.chat_message);
-          $scope.messages.push({
+          $scope.messages.push(new models.Message({
             text: $scope.chat_message,
-            user: {
-              name: 'me',
-              id: 'me'
-            }
-          });
+            user: socket.identity
+          }));
           return $scope.chat_message = '';
         };
         socket.on('chat', function(message) {
@@ -142,8 +195,16 @@
             return $scope.messages.push(message);
           });
         });
-        return $scope.select_user = function(user) {
+        socket.on('got_challenge', function(challenge) {
+          return $scope.$apply(function() {
+            return $scope.messages.push(new models.Challenge(challenge));
+          });
+        });
+        $scope.select_user = function(user) {
           return $scope.$emit('select-user', user);
+        };
+        return $scope.accept_challenge = function(challenge) {
+          return socket.emit('accept_challenge', challenge.id);
         };
       }
     };

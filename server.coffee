@@ -138,8 +138,27 @@ class User
 app.get '/users/', (request, response) ->
     json_response response, _.values users
 
+games = {}
+class Game
+    constructor: ({@challenger, @challengee}, @id=UUID())->
+        games[@id] = @
+
+    remove: ->
+        delete games[@id]
+
+challenges = {}
+class Challenge
+    constructor: (@challenger, @challengee, @id=UUID()) ->
+        challenges[@id] = @
+
+    toJSON: ->
+        id:@id
+        challenger_id:@challenger.id
+        challengee_id:@challengee.id
+
 io.sockets.on 'connection', (socket) ->
     user = new User
+    user.socket = socket
     socket.broadcast.emit 'user_join', user
     socket.emit 'user_identity', user
 
@@ -151,6 +170,18 @@ io.sockets.on 'connection', (socket) ->
     socket.on 'disconnect', ->
         socket.broadcast.emit 'user_leave', user.id
         user.remove()
+
+    socket.on 'send_challenge', (challengee_id) ->
+        console.log "sent challenge to #{challengee_id} when users is #{_.keys(users)}"
+        challengee = users[challengee_id]
+        challenge = new Challenge user, challengee
+        challengee.socket.emit 'got_challenge', challenge
+
+    socket.on 'accept_challenge', (challenge_id) ->
+        challenge = challenges[challenge_id]
+        new Game challenge
+
+
 
     ###
     socket.on 'command_activate', (command) ->
