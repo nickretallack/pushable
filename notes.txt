@@ -1,6 +1,4 @@
-Next steps:
-    - make a stable simulation on the server side.  Perhaps remove gravity.
-    - send keyboard events
-    - render client side with the dom
-    - apply interpolations with css animations
-    - find out why the gravity works despite my world constructor not matching
+- manage a list of connected users totally independently of games
+- manage a list of running games
+
+When you start a game, 
