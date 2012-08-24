@@ -144,9 +144,11 @@
     Message = (function() {
 
       function Message(_arg) {
-        var user_id;
-        this.text = _arg.text, user_id = _arg.user_id;
-        this.user = users.get(user_id);
+        var user_id, _ref;
+        this.text = _arg.text, this.user = _arg.user, user_id = _arg.user_id;
+        if ((_ref = this.user) == null) {
+          this.user = users.get(user_id);
+        }
       }
 
       return Message;
@@ -191,7 +193,7 @@
         };
         socket.on('chat', function(message) {
           return $scope.$apply(function() {
-            message.user = new User(message.user);
+            message = new models.Message(message);
             return $scope.messages.push(message);
           });
         });

@@ -81,8 +81,8 @@ module.factory 'models', (users) ->
             @challengee = users.get challengee_id
 
     class Message
-        constructor: ({@text, user_id}) ->
-            @user = users.get user_id
+        constructor: ({@text, @user, user_id}) ->
+            @user ?= users.get user_id
 
     Challenge:Challenge
     Message:Message
@@ -128,7 +128,7 @@ module.directive 'chat', ->
             $scope.chat_message = ''
 
         socket.on 'chat', (message) -> $scope.$apply ->
-            message.user = new User message.user
+            message = new models.Message message
             $scope.messages.push message
 
         socket.on 'got_challenge', (challenge) -> $scope.$apply ->
