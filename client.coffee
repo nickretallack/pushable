@@ -25,6 +25,7 @@ module.factory 'socket', ($q, $rootScope) ->
         user =  new User user_data
         deferred_identity.resolve user
         socket.identity = user
+
     socket
 
 
@@ -96,6 +97,8 @@ module.filter 'messagetype', (models) ->
         if object instanceof models.Message then 'message'
         else if object instanceof models.Challenge then 'challenge'
 
+module.directive ''
+
 module.directive 'chat', ->
     template:"""
     <div>
@@ -118,7 +121,7 @@ module.directive 'chat', ->
     </div>
     """
     replace:true
-    controller: ($scope, socket, users, models) ->
+    controller: ($scope, socket, users, models, $location) ->
         $scope.messages = []
         $scope.chat = ->
             socket.emit 'chat', $scope.chat_message
@@ -134,12 +137,48 @@ module.directive 'chat', ->
         socket.on 'got_challenge', (challenge) -> $scope.$apply ->
             $scope.messages.push new models.Challenge challenge
 
+        socket.on 'start_game', (game) -> $scope.$apply ->
+            $location.updateHash path:"/room/#{game.id}"
+
         $scope.select_user = (user) ->
             $scope.$emit 'select-user', user
 
         $scope.accept_challenge = (challenge) ->
             socket.emit 'accept_challenge', challenge.id
 
+module.directive 'game', (socket) ->
+    link:(element) ->
+
+    controller: ($scope, socket) ->
+        socket.on 'update', (things) ->
+            for thing in things
+                all_things[thing.id].update thing.position
+
+        socket.on 'player_join', (thing) ->
+            new Thing thing
+
+        socket.on 'player_leave', (id) ->
+            all_things[id].remove()
+
+        $scope.$on 'blur' ->
+            socket.emit 'command_clear'
+
+module.run ($rootScope, socket) ->
+    $scope = $rootScope
+    $(window).on 'blur', (event) ->
+        $scope.$broadcast 'blur'
+
+    $(document).bind 'keydown', (event) ->
+        command = get_command event
+        if command? and command not of active_commands
+            active_commands[command] = true
+            socket.emit 'command_activate', command
+
+    $(document).bind 'keyup', (event) ->
+        command = get_command event
+        if command? and command of active_commands
+            delete active_commands[command]
+            socket.emit 'command_deactivate', command
 
 
 game_node = null
@@ -196,30 +235,7 @@ $ ->
             ready()
 ###
 ready = ->
-    socket.on 'update', (things) ->
-        for thing in things
-            all_things[thing.id].update thing.position
 
         #console.log frame_rate.get_frame_delta()
         #console.log get_average_deviation frame_length_milliseconds
 
-    socket.on 'player_join', (thing) ->
-        new Thing thing
-
-    socket.on 'player_leave', (id) ->
-        all_things[id].remove()
-
-    $(document).on 'keydown', (event) ->
-        command = get_command event
-        if command? and command not of active_commands
-            active_commands[command] = true
-            socket.emit 'command_activate', command
-
-    $(document).on 'keyup', (event) ->
-        command = get_command event
-        if command? and command of active_commands
-            delete active_commands[command]
-            socket.emit 'command_deactivate', command
-
-    $(window).on 'blur', (event) ->
-        socket.emit 'command_clear'

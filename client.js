@@ -177,6 +177,8 @@
     };
   });
 
+  module.directive('');
+
   module.directive('chat', function() {
     return {
       template: "<div>\n    <ul>\n        <li ng-repeat=\"message in messages\">\n            <div ng-switch=\"message|messagetype\">\n                <div ng-switch-when=\"message\">\n                    <a ng-click=\"select_user(message.user)\">{{message.user.name}}</a>: {{message.text}}\n                </div>\n                <div ng-switch-when=\"challenge\">\n                    {{message.challenger.name}} has challenged you to a game.\n                    <a ng-click=\"accept_challenge(message)\">Accept?</a>\n                </div>\n            </div>\n        </li>\n    </ul>\n    <form ng-submit=\"chat()\">\n        <input ng-model=\"chat_message\">\n    </form>\n</div>",
@@ -200,6 +202,11 @@
         socket.on('got_challenge', function(challenge) {
           return $scope.$apply(function() {
             return $scope.messages.push(new models.Challenge(challenge));
+          });
+        });
+        socket.on('start_game', function(game) {
+          return $scope.$apply(function() {
+            return $scope.root.game = game;
           });
         });
         $scope.select_user = function(user) {
