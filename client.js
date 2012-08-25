@@ -84,23 +84,18 @@
     });
     socket.on('user_join', function(user) {
       return ui(function() {
-        return state.users.push(new User(user));
+        return state.users[user.id] = new User(user);
       });
     });
     socket.on('user_leave', function(user_id) {
       return ui(function() {
-        var user;
-        return state.users = (function() {
-          var _i, _len, _results;
-          _results = [];
-          for (_i = 0, _len = all_users.length; _i < _len; _i++) {
-            user = all_users[_i];
-            if (user.id !== user_id) {
-              _results.push(user);
-            }
-          }
-          return _results;
-        })();
+        return delete state.users[user_id];
+      });
+    });
+    socket.on('chat_history', function(messages) {
+      return ui(function() {
+        state.messages = bless_list(messages, Message);
+        return console.log(messages, 'chat history');
       });
     });
     socket.on('chat', function(message) {
@@ -291,10 +286,12 @@
 
   module.directive('chat', function() {
     return {
-      template: "<div>\n    <ul>\n        <li ng-repeat=\"message in messages\">\n            <div ng-switch=\"message|messagetype\">\n                <div ng-switch-when=\"message\">\n                    <a ng-click=\"select_user(message.user)\">{{message.user.name}}</a>: {{message.text}}\n                </div>\n                <div ng-switch-when=\"challenge\">\n                    {{message.challenger.name}} has challenged you to a game.\n                    <a ng-click=\"accept_challenge(message)\">Accept?</a>\n                </div>\n            </div>\n        </li>\n    </ul>\n    <form ng-submit=\"chat()\">\n        <input ng-model=\"chat_message\">\n    </form>\n</div>",
+      template: "<div>\n    <ul>\n        <li ng-repeat=\"message in get_messages()\">\n            <div ng-switch=\"message|messagetype\">\n                <div ng-switch-when=\"message\">\n                    <a ng-click=\"select_user(message.user)\">{{message.user.name}}</a>: {{message.text}}\n                </div>\n                <div ng-switch-when=\"challenge\">\n                    {{message.challenger.name}} has challenged you to a game.\n                    <a ng-click=\"accept_challenge(message)\">Accept?</a>\n                </div>\n            </div>\n        </li>\n    </ul>\n    <form ng-submit=\"chat()\">\n        <input ng-model=\"chat_message\">\n    </form>\n</div>",
       replace: true,
       controller: function($scope, networking) {
-        $scope.messages = networking.state.messages;
+        $scope.get_messages = function() {
+          return networking.state.messages;
+        };
         $scope.chat = function() {
           networking.send_chat($scope.chat_message);
           return $scope.chat_message = '';

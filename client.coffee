@@ -46,10 +46,15 @@ module.factory 'networking', ($rootScope) ->
         bless_and_map user_list, User
 
     socket.on 'user_join', (user) -> ui ->
-        state.users.push new User user
+        state.users[user.id] = new User user
 
     socket.on 'user_leave', (user_id) -> ui ->
-        state.users = (user for user in all_users when user.id isnt user_id) #_.filter all_users, (user) -> user.id is user_id
+        delete state.users[user_id]
+        #state.users = (user for user in all_users when user.id isnt user_id) #_.filter all_users, (user) -> user.id is user_id
+
+    socket.on 'chat_history', (messages) -> ui ->
+        state.messages = bless_list messages, Message
+        console.log messages, 'chat history'
 
     socket.on 'chat', (message) -> ui ->
         message = new Message message
@@ -200,7 +205,7 @@ module.directive 'chat', ->
     template:"""
     <div>
         <ul>
-            <li ng-repeat="message in messages">
+            <li ng-repeat="message in get_messages()">
                 <div ng-switch="message|messagetype">
                     <div ng-switch-when="message">
                         <a ng-click="select_user(message.user)">{{message.user.name}}</a>: {{message.text}}
@@ -219,7 +224,7 @@ module.directive 'chat', ->
     """
     replace:true
     controller: ($scope, networking) ->
-        $scope.messages = networking.state.messages
+        $scope.get_messages = -> networking.state.messages
         $scope.chat = ->
             networking.send_chat $scope.chat_message
             $scope.chat_message = ''

@@ -55,6 +55,13 @@ class Challenge
         challenger_id:@challenger.id
         challengee_id:@challengee.id
 
+chat_history = []
+max_chat_history_length = 1000
+add_to_chat_history = (message) ->
+    chat_history.push message
+    if chat_history.length > 1000
+        chat_history = chat_history[max_chat_history_length/2..]
+
 io.sockets.on 'connection', (socket) ->
     user = new User
     user.socket = socket
@@ -64,11 +71,14 @@ io.sockets.on 'connection', (socket) ->
         socket.join 'chat'
         socket.emit 'user_list', _.values users
         socket.broadcast.emit 'user_join', user
+        socket.emit 'chat_history', chat_history
 
     socket.on 'chat', (text) ->
-        io.sockets.in('chat').emit 'chat',
+        message = 
             user:user
             text:text
+        add_to_chat_history message
+        io.sockets.in('chat').emit 'chat', message
 
     socket.on 'disconnect', ->
         socket.broadcast.emit 'user_leave', user.id
