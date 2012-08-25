@@ -100,10 +100,14 @@
     var user;
     user = new User;
     user.socket = socket;
-    socket.broadcast.emit('user_join', user);
     socket.emit('user_identity', user);
+    socket.on('join_chat', function() {
+      socket.join('chat');
+      socket.emit('user_list', _.values(users));
+      return socket.broadcast.emit('user_join', user);
+    });
     socket.on('chat', function(text) {
-      return socket.broadcast.emit('chat', {
+      return io.sockets["in"]('chat').emit('chat', {
         user: user,
         text: text
       });

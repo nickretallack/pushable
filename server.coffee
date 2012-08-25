@@ -58,11 +58,15 @@ class Challenge
 io.sockets.on 'connection', (socket) ->
     user = new User
     user.socket = socket
-    socket.broadcast.emit 'user_join', user
     socket.emit 'user_identity', user
 
+    socket.on 'join_chat', ->
+        socket.join 'chat'
+        socket.emit 'user_list', _.values users
+        socket.broadcast.emit 'user_join', user
+
     socket.on 'chat', (text) ->
-        socket.broadcast.emit 'chat',
+        io.sockets.in('chat').emit 'chat',
             user:user
             text:text
 
