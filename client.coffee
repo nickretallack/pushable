@@ -4,6 +4,7 @@ module.factory 'networking', ($rootScope) ->
     ui = (procedure) -> $rootScope.$apply procedure
 
     state =
+        game:null
         user:null
         users:{}
         messages:[]
@@ -23,12 +24,12 @@ module.factory 'networking', ($rootScope) ->
 
     class Challenge
         constructor: ({@id, challenger_id, challengee_id}) ->
-            @challenger = users.get challenger_id
-            @challengee = users.get challengee_id
+            @challenger = state.users[challenger_id]
+            @challengee = state.users[challengee_id]
 
     class Message
         constructor: ({@text, @user, user_id}) ->
-            @user ?= users.get user_id
+            @user ?= state.users[user_id]
 
     # Connect
 
@@ -54,23 +55,25 @@ module.factory 'networking', ($rootScope) ->
 
     socket.on 'chat_history', (messages) -> ui ->
         state.messages = bless_list messages, Message
-        console.log messages, 'chat history'
 
     socket.on 'chat', (message) -> ui ->
         message = new Message message
         state.messages.push message
 
     socket.on 'got_challenge', (challenge) -> ui ->
-        $scope.messages.push new Challenge challenge
+        state.messages.push new Challenge challenge
 
     socket.on 'start_game', (game) -> ui ->
-        $location.updateHash path:"/room/#{game.id}"
+        state.game = new Game game
 
     send_chat = (text) ->
         socket.emit 'chat', text
 
     send_challenge = (user) ->
         socket.emit 'send_challenge', user.id
+
+    accept_challenge = (challenge) ->
+        socket.emit 'accept_challenge', challenge.id
 
     # This is the keyboard bindings.  These are game specific.
     commands =
@@ -113,23 +116,32 @@ module.factory 'networking', ($rootScope) ->
 
     # game specific stuff
 
-    all_things = {}
-
     socket.on 'update', (things) ->
-        for thing in things
-            all_things[thing.id].update thing.position
+        state.game.update things
 
     socket.on 'player_join', (thing) ->
-        new Thing thing
+        new Thing _.extend thing, state.game
 
     socket.on 'player_leave', (id) ->
-        all_things[id].remove()
+        state.game.things[id].remove()
 
     meters_to_pixels = (meters) -> meters * 20
 
+    class Game
+        constructor:({@id, things}) ->
+            @node = $ '<div></div>'
+            @things = {}
+            for id, thing of things
+                new Thing _.extend thing,
+                    game:@
+
+        update: (things) ->
+            for thing in things
+                @things[thing.id].update thing.position
+
     class Thing
-        constructor: ({@size, @position, @id}) ->
-            all_things[@id] = @
+        constructor: ({@size, @position, @id, @game}) ->
+            @game.things[@id] = @
             @element = $ '<div class="player"></div>'
             @element.css
                 width:meters_to_pixels @size.x
@@ -137,7 +149,7 @@ module.factory 'networking', ($rootScope) ->
                 left:meters_to_pixels(@position.x) + 200
                 top:meters_to_pixels(@position.y) + 200
                 'background-color':"##{@id[...6]}"
-            game_node.append @element
+            @game.node.append @element
 
         update: (@position) ->
             css = 
@@ -148,12 +160,13 @@ module.factory 'networking', ($rootScope) ->
 
         remove: ->
             @element.remove()
-            delete all_things[@id]
+            delete @game.things[@id]
 
 
     state:state
     send_chat:send_chat
     send_challenge:send_challenge
+    accept_challenge:accept_challenge
     models:
         Challenge:Challenge
         Message:Message
@@ -165,7 +178,8 @@ module.config ($routeProvider) ->
     $routeProvider.when '/', templateUrl:'home', controller:'home'
     $routeProvider.when '/room/:room_id', templateUrl:'game', controller:'game'
 
-module.controller 'home', ($scope, $location) ->
+module.controller 'home', ($scope, $location, networking) ->
+    $scope.get_game = -> networking.state.game
 
 module.controller 'game', ($scope) ->
 
@@ -232,9 +246,9 @@ module.directive 'chat', ->
         $scope.select_user = (user) ->
             $scope.$emit 'select-user', user
 
-#        $scope.accept_challenge = (challenge) ->
-#            socket.emit 'accept_challenge', challenge.id
+        $scope.accept_challenge = (challenge) ->
+            networking.accept_challenge challenge
 
-#module.directive 'game', (socket) ->
-#    link:(element) ->
-#    controller: ($scope, socket) ->
+module.directive 'game', (networking) ->
+    link:(scope, element) ->
+        element.append(networking.state.game.node)

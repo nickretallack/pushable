@@ -16,13 +16,19 @@
 <link rel="stylesheet" href="library/bootstrap/css/bootstrap.css">
 
 <script type="text/ng-template" id="home">
-<a ng-click="new_game()">New Game</a>
+<div ng-switch="!!get_game()">
+    <div ng-switch-when="true">
+        <div id="game" game="game"></div>
+    </div>
+    <div ng-switch-default>
 
-<div chat></div>
+        <div chat></div>
 
-<div user-list></div>
+        <div user-list></div>
 
-This is the front page.
+        This is the front page.
+    </div>
+</div>
 </script>
 
 <script type="text/ng-template" id="game">

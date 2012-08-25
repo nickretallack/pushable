@@ -5,11 +5,12 @@
   module = angular.module('game', []);
 
   module.factory('networking', function($rootScope) {
-    var Challenge, Message, Thing, User, active_commands, all_things, bind_keyboard, bless_and_map, bless_list, blur_handler, commands, get_command, get_key_name, keydown_handler, keyup_handler, meters_to_pixels, send_challenge, send_chat, set_keyboard_events, socket, state, ui, unbind_keyboard;
+    var Challenge, Game, Message, Thing, User, accept_challenge, active_commands, bind_keyboard, bless_and_map, bless_list, blur_handler, commands, get_command, get_key_name, keydown_handler, keyup_handler, meters_to_pixels, send_challenge, send_chat, set_keyboard_events, socket, state, ui, unbind_keyboard;
     ui = function(procedure) {
       return $rootScope.$apply(procedure);
     };
     state = {
+      game: null,
       user: null,
       users: {},
       messages: []
@@ -47,8 +48,8 @@
       function Challenge(_arg) {
         var challengee_id, challenger_id;
         this.id = _arg.id, challenger_id = _arg.challenger_id, challengee_id = _arg.challengee_id;
-        this.challenger = users.get(challenger_id);
-        this.challengee = users.get(challengee_id);
+        this.challenger = state.users[challenger_id];
+        this.challengee = state.users[challengee_id];
       }
 
       return Challenge;
@@ -60,7 +61,7 @@
         var user_id, _ref;
         this.text = _arg.text, this.user = _arg.user, user_id = _arg.user_id;
         if ((_ref = this.user) == null) {
-          this.user = users.get(user_id);
+          this.user = state.users[user_id];
         }
       }
 
@@ -94,8 +95,7 @@
     });
     socket.on('chat_history', function(messages) {
       return ui(function() {
-        state.messages = bless_list(messages, Message);
-        return console.log(messages, 'chat history');
+        return state.messages = bless_list(messages, Message);
       });
     });
     socket.on('chat', function(message) {
@@ -106,14 +106,12 @@
     });
     socket.on('got_challenge', function(challenge) {
       return ui(function() {
-        return $scope.messages.push(new Challenge(challenge));
+        return state.messages.push(new Challenge(challenge));
       });
     });
     socket.on('start_game', function(game) {
       return ui(function() {
-        return $location.updateHash({
-          path: "/room/" + game.id
-        });
+        return state.game = new Game(game);
       });
     });
     send_chat = function(text) {
@@ -121,6 +119,9 @@
     };
     send_challenge = function(user) {
       return socket.emit('send_challenge', user.id);
+    };
+    accept_challenge = function(challenge) {
+      return socket.emit('accept_challenge', challenge.id);
     };
     commands = {
       left: 'left',
@@ -168,30 +169,51 @@
     unbind_keyboard = function() {
       return set_keyboard_events('off');
     };
-    all_things = {};
     socket.on('update', function(things) {
-      var thing, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = things.length; _i < _len; _i++) {
-        thing = things[_i];
-        _results.push(all_things[thing.id].update(thing.position));
-      }
-      return _results;
+      return state.game.update(things);
     });
     socket.on('player_join', function(thing) {
-      return new Thing(thing);
+      return new Thing(_.extend(thing, state.game));
     });
     socket.on('player_leave', function(id) {
-      return all_things[id].remove();
+      return state.game.things[id].remove();
     });
     meters_to_pixels = function(meters) {
       return meters * 20;
     };
+    Game = (function() {
+
+      function Game(_arg) {
+        var thing, things;
+        this.id = _arg.id, things = _arg.things;
+        this.node = $('<div></div>');
+        this.things = {};
+        for (id in things) {
+          thing = things[id];
+          new Thing(_.extend(thing, {
+            game: this
+          }));
+        }
+      }
+
+      Game.prototype.update = function(things) {
+        var thing, _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = things.length; _i < _len; _i++) {
+          thing = things[_i];
+          _results.push(this.things[thing.id].update(thing.position));
+        }
+        return _results;
+      };
+
+      return Game;
+
+    })();
     Thing = (function() {
 
       function Thing(_arg) {
-        this.size = _arg.size, this.position = _arg.position, this.id = _arg.id;
-        all_things[this.id] = this;
+        this.size = _arg.size, this.position = _arg.position, this.id = _arg.id, this.game = _arg.game;
+        this.game.things[this.id] = this;
         this.element = $('<div class="player"></div>');
         this.element.css({
           width: meters_to_pixels(this.size.x),
@@ -200,7 +222,7 @@
           top: meters_to_pixels(this.position.y) + 200,
           'background-color': "#" + this.id.slice(0, 6)
         });
-        game_node.append(this.element);
+        this.game.node.append(this.element);
       }
 
       Thing.prototype.update = function(position) {
@@ -216,7 +238,7 @@
 
       Thing.prototype.remove = function() {
         this.element.remove();
-        return delete all_things[this.id];
+        return delete this.game.things[this.id];
       };
 
       return Thing;
@@ -226,6 +248,7 @@
       state: state,
       send_chat: send_chat,
       send_challenge: send_challenge,
+      accept_challenge: accept_challenge,
       models: {
         Challenge: Challenge,
         Message: Message,
@@ -245,7 +268,11 @@
     });
   });
 
-  module.controller('home', function($scope, $location) {});
+  module.controller('home', function($scope, $location, networking) {
+    return $scope.get_game = function() {
+      return networking.state.game;
+    };
+  });
 
   module.controller('game', function($scope) {});
 
@@ -296,9 +323,20 @@
           networking.send_chat($scope.chat_message);
           return $scope.chat_message = '';
         };
-        return $scope.select_user = function(user) {
+        $scope.select_user = function(user) {
           return $scope.$emit('select-user', user);
         };
+        return $scope.accept_challenge = function(challenge) {
+          return networking.accept_challenge(challenge);
+        };
+      }
+    };
+  });
+
+  module.directive('game', function(networking) {
+    return {
+      link: function(scope, element) {
+        return element.append(networking.state.game.node);
       }
     };
   });
