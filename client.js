@@ -111,7 +111,7 @@
     });
     socket.on('start_game', function(game) {
       return ui(function() {
-        return state.game = new Game(game);
+        return new Game(game);
       });
     });
     send_chat = function(text) {
@@ -186,6 +186,8 @@
       function Game(_arg) {
         var thing, things;
         this.id = _arg.id, things = _arg.things;
+        state.game = this;
+        bind_keyboard();
         this.node = $('<div></div>');
         this.things = {};
         for (id in things) {
@@ -204,6 +206,11 @@
           _results.push(this.things[thing.id].update(thing.position));
         }
         return _results;
+      };
+
+      Game.prototype.remove = function() {
+        state.game = null;
+        return unbind_keyboard();
       };
 
       return Game;

@@ -64,7 +64,7 @@ module.factory 'networking', ($rootScope) ->
         state.messages.push new Challenge challenge
 
     socket.on 'start_game', (game) -> ui ->
-        state.game = new Game game
+        new Game game
 
     send_chat = (text) ->
         socket.emit 'chat', text
@@ -129,6 +129,8 @@ module.factory 'networking', ($rootScope) ->
 
     class Game
         constructor:({@id, things}) ->
+            state.game = @
+            bind_keyboard()
             @node = $ '<div></div>'
             @things = {}
             for id, thing of things
@@ -138,6 +140,10 @@ module.factory 'networking', ($rootScope) ->
         update: (things) ->
             for thing in things
                 @things[thing.id].update thing.position
+
+        remove: ->
+            state.game = null
+            unbind_keyboard()
 
     class Thing
         constructor: ({@size, @position, @id, @game}) ->

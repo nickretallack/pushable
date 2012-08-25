@@ -68,9 +68,10 @@ io.sockets.on 'connection', (socket) ->
     socket.emit 'user_identity', user
 
     socket.on 'join_chat', ->
-        socket.join 'chat'
+        channel = 'chat'
+        socket.join channel
+        socket.broadcast.to(channel).emit 'user_join', user
         socket.emit 'user_list', _.values users
-        socket.broadcast.emit 'user_join', user
         socket.emit 'chat_history', chat_history
 
     socket.on 'chat', (text) ->
@@ -94,9 +95,11 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'accept_challenge', (challenge_id) ->
         challenge = challenges[challenge_id]
-        game = new BasicGame challenge
+        game = new BasicGame challenge, io.sockets
         games[game.id] = game
 
+        challenge.challenger.socket.join game.channel
+        challenge.challengee.socket.join game.channel
         challenge.challenger.socket.emit 'start_game', game, 0
         challenge.challengee.socket.emit 'start_game', game, 1
 

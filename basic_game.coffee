@@ -5,9 +5,9 @@ frame_rate = require './frame_rate'
 _ = require 'underscore'
 UUID = require('./library/uuid').UUID
 
-# make the world
+# constants
 gravity = V 0, 0 #-9.8
-
+speed = 20
 box_size = V 2,2
 box_body_def = new b2d.b2BodyDef
 box_body_def.type = b2d.b2Body.b2_dynamicBody
@@ -77,10 +77,12 @@ class Player
         @physics.remove()
 
 class Game
-    constructor: ({challenger, challengee}, @id=UUID())->
+    constructor: ({challenger, challengee}, @sockets, @id=UUID())->
+        @channel = "game-#{@id}"
         @world = new b2d.b2World gravity, true
         @players = {}
         @things = {}
+
         new Player @, challenger
         new Player @, challengee
 
@@ -92,16 +94,16 @@ class Game
             @world.ClearForces()
 
             changes = (thing.changes() for id, thing of @things when thing.body.IsAwake())
-            for id, player of @players
-                player.user.socket.volatile.emit 'update', changes
+            @sockets.in(@channel).volatile.emit 'update', changes
 
-        setInterval update, frame_rate.frame_length_milliseconds
+        @timer = setInterval update, frame_rate.frame_length_milliseconds
 
     toJSON: ->
         id:@id
         things:@things
 
     remove: ->
+        clearTimeout @timer
         delete games[@id]
 
 exports.Game = Game
