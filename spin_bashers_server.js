@@ -140,7 +140,7 @@
     arena_edge_fixtures.push;
   }
 
-  arena_body_def = b2d.b2BodyDef;
+  arena_body_def = new b2d.b2BodyDef;
 
   arena_body_def.type = b2d.b2Body.b2_staticBody;
 
@@ -220,22 +220,24 @@
     }
 
     Game.prototype.setup = function() {
+      this.world = new b2d.b2World(gravity, true);
       this.arena = new Arena(this);
       this.player_body = new PlayerPhysics(this);
       new Player({
         game: this,
         user: this.challenger,
-        shape: this.player_physics.player1
+        shape: this.player_body.player1
       });
       return new Player({
         game: this,
         user: this.challengee,
-        shape: this.player_physics.player2
+        shape: this.player_body.player2
       });
     };
 
+    Game.prototype.control_players = function() {};
+
     /*
-        control_players: ->
             player1_position = player1.body.GetPosition()
             player2_position = player2.body.GetPosition()
             player1_direction = player2_position.minus(player1_position).normalize()

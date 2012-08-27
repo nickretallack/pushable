@@ -108,8 +108,9 @@ for index in [0...base_game.diagonals.length]
 #arena_shape_def = new b2d.b2EdgeShape 
 #arena_shape_def.CreateChain arena_coordinates
 
-arena_body_def = b2d.b2BodyDef
+arena_body_def = new b2d.b2BodyDef
 arena_body_def.type = b2d.b2Body.b2_staticBody
+#arena_body_def.position = origin
 
 #arena_fixture_def = b2d.b2FixtureDef
 #arena_fixture_def.shape = arena_shape_def
@@ -148,21 +149,22 @@ class Game extends base_game.AbstractGame
         super sockets, id
 
     setup: ->
+        @world = new b2d.b2World gravity, true
         @arena = new Arena @
         @player_body = new PlayerPhysics @
 
         new Player 
             game:@
             user:@challenger 
-            shape:@player_physics.player1
+            shape:@player_body.player1
 
         new Player
             game:@
             user:@challengee
-            shape:@player_physics.player2
+            shape:@player_body.player2
 
-    ###
     control_players: ->
+    ###
         player1_position = player1.body.GetPosition()
         player2_position = player2.body.GetPosition()
         player1_direction = player2_position.minus(player1_position).normalize()

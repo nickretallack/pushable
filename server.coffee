@@ -94,7 +94,7 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'accept_challenge', (challenge_id) ->
         challenge = challenges[challenge_id]
-        game = new BasicGame challenge, io.sockets
+        game = new SpinBashersGame challenge, io.sockets
         games[game.id] = game
 
         challenge.challenger.socket.join game.channel
@@ -108,7 +108,6 @@ io.sockets.on 'connection', (socket) ->
         user.player?.release command
     socket.on 'command_clear', ->
         user.player?.clear_commands()
-
 
 # Get things going
 #frame_rate.get_frame_delta()

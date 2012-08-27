@@ -49,6 +49,10 @@
       return this.body.CreateFixture(box_fixture_def);
     };
 
+    PlayerBody.prototype.teardown = function() {
+      return this.game.world.DestroyBody(this.body);
+    };
+
     PlayerBody.prototype.toJSON = function() {
       return _.extend(PlayerBody.__super__.toJSON.call(this), {
         size: box_size

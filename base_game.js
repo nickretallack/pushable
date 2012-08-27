@@ -30,6 +30,15 @@
       this.setup();
     }
 
+    AbstractBody.prototype.remove = function() {
+      delete this.game.bodies[this.id];
+      return this.teardown();
+    };
+
+    AbstractBody.prototype.setup = function() {};
+
+    AbstractBody.prototype.teardown = function() {};
+
     AbstractBody.prototype.toJSON = function() {
       return _.extend(this.changes(), this.unchanges());
     };
@@ -56,11 +65,6 @@
       };
     };
 
-    AbstractBody.prototype.remove = function() {
-      this.game.world.DestroyBody(this.body);
-      return delete this.game.bodies[this.id];
-    };
-
     return AbstractBody;
 
   })();
@@ -79,6 +83,17 @@
       this.name = this.id;
       this.setup();
     }
+
+    AbstractPlayer.prototype.remove = function() {
+      delete players[this.id];
+      return this.teardown();
+    };
+
+    AbstractPlayer.prototype.setup = function() {};
+
+    AbstractPlayer.prototype.teardown = function() {};
+
+    AbstractPlayer.prototype.control = function() {};
 
     AbstractPlayer.prototype.other_player = function() {
       var id, player, _ref;
@@ -103,13 +118,6 @@
       return this.commands = {};
     };
 
-    AbstractPlayer.prototype.remove = function() {
-      delete players[this.id];
-      return this.teardown();
-    };
-
-    AbstractPlayer.prototype.teardown = function() {};
-
     return AbstractPlayer;
 
   })();
@@ -126,6 +134,15 @@
       this.setup();
       this.start();
     }
+
+    AbstractGame.prototype.remove = function() {
+      clearTimeout(this.timer);
+      return this.teardown();
+    };
+
+    AbstractGame.prototype.setup = function() {};
+
+    AbstractGame.prototype.teardown = function() {};
 
     AbstractGame.prototype.start = function() {
       return this.timer = setInterval(this.step, frame_rate.frame_length_milliseconds);
@@ -176,13 +193,6 @@
         things: this.bodies
       };
     };
-
-    AbstractGame.prototype.remove = function() {
-      clearTimeout(this.timer);
-      return this.teardown();
-    };
-
-    AbstractGame.prototype.teardown = function() {};
 
     return AbstractGame;
 

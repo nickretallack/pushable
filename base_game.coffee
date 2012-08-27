@@ -22,6 +22,13 @@ class AbstractBody
         @game.bodies[@id] = @
         @setup()
 
+    remove: ->
+        delete @game.bodies[@id]
+        @teardown()
+
+    setup:->
+    teardown:->
+
     toJSON: ->
         _.extend @changes(), @unchanges()
 
@@ -37,9 +44,6 @@ class AbstractBody
         type:@type
         size:@size
 
-    remove: ->
-        @game.world.DestroyBody @body
-        delete @game.bodies[@id]
 
 class AbstractPlayer
     constructor: ({@game, @user, @id}) ->
@@ -49,6 +53,14 @@ class AbstractPlayer
         @user.player = @
         @name = @id
         @setup()
+
+    remove: ->
+        delete players[@id]
+        @teardown()
+
+    setup:->
+    teardown:->
+    control:->
 
     other_player: ->
         # Useful for two-player games
@@ -64,20 +76,21 @@ class AbstractPlayer
     clear_commands: ->
         @commands = {}
 
-    remove: ->
-        delete players[@id]
-        @teardown()
-
-    teardown: ->
-
 class AbstractGame
-    constructor: (@sockets, @id=UUID())->
+    constructor: (@sockets, @id=UUID()) ->
         _.bindAll @, 'step'
         @channel = "game-#{@id}"
         @players = {}
         @bodies = {}
         @setup()
         @start()
+
+    remove: ->
+        clearTimeout @timer
+        @teardown()
+
+    setup:->
+    teardown:->
 
     start: ->
         @timer = setInterval @step, frame_rate.frame_length_milliseconds
@@ -102,12 +115,6 @@ class AbstractGame
     toJSON: ->
         id:@id
         things:@bodies
-
-    remove: ->
-        clearTimeout @timer
-        @teardown()
-
-    teardown: ->
 
 exports.cardinals = cardinals
 exports.diagonals = diagonals

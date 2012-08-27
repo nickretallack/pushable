@@ -24,6 +24,9 @@ class PlayerBody extends base_game.AbstractBody
         @body = @game.world.CreateBody box_body_def
         @body.CreateFixture box_fixture_def
 
+    teardown:->
+        @game.world.DestroyBody @body
+
     toJSON: ->
         _.extend super(),
             size:box_size
@@ -42,7 +45,7 @@ class PushableGame extends base_game.AbstractGame
         {@challenger, @challengee} = args
         super sockets, id
 
-    setup: ->        
+    setup: ->
         @world = new b2d.b2World gravity, true
 
         new Player 

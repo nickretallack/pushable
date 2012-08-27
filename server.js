@@ -144,7 +144,7 @@
     socket.on('accept_challenge', function(challenge_id) {
       var challenge, game;
       challenge = challenges[challenge_id];
-      game = new BasicGame(challenge, io.sockets);
+      game = new SpinBashersGame(challenge, io.sockets);
       games[game.id] = game;
       challenge.challenger.socket.join(game.channel);
       challenge.challengee.socket.join(game.channel);
