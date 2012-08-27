@@ -4,7 +4,7 @@ V = require('./server_box2d_vector').V
 frame_rate = require './frame_rate'
 _ = require 'underscore'
 UUID = require('./library/uuid').UUID
-base_game = require 'base_game'
+base_game = require './base_game'
 
 # constants
 origin = V 0,0
@@ -43,6 +43,11 @@ player_fixture_def.shape = player_shape_def
 player_fixture_def.density = 1.0
 player_fixture_def.restitution = 1.0
 
+player_distance = 6
+half_player_distance = player_distance / 2
+player1_position = V -half_player_distance, 0
+player2_position = V half_player_distance, 0
+
 make_players = (world, position) ->
     players_body_def.position = position
     body = world.CreateBody players_body_def
@@ -68,7 +73,7 @@ make_damped_body_def = ->
     return def
 
 crate_diameter = 2
-crate_shape_def = b2d.b2PolygonShape()
+crate_shape_def = new b2d.b2PolygonShape
 crate_shape_def.SetAsBox crate_diameter, crate_diameter
 
 crate_body_def = make_damped_body_def()
@@ -87,55 +92,77 @@ make_crate = (world, position) ->
 ################
 
 arena_size = 30
-arena_shape_def = b2d.b2ChainShape()
-arena_coordinates = (diagonal.scale world_size for diagonal in base_game.diagonals)
-arena_shape_def.CreateChain arena_coordinates
+arena_edge_fixtures = []
+for index in [0...base_game.diagonals.length]
+    point1 = base_game.diagonals[index]
+    point2 = base_game.diagonals[(index+1) % base_game.diagonals.length]
+    edge = new b2d.b2EdgeShape point1, point2
+    #debugger
+    #edge.Set point1, point2
+    fixture_def = b2d.b2FixtureDef
+    fixture_def.shape = edge
+    arena_edge_fixtures.push
+
+#arena_shape_def = new b2d.b2ChainShape
+#arena_coordinates = (diagonal.scale arena_size for diagonal in base_game.diagonals)
+#arena_shape_def = new b2d.b2EdgeShape 
+#arena_shape_def.CreateChain arena_coordinates
 
 arena_body_def = b2d.b2BodyDef
 arena_body_def.type = b2d.b2Body.b2_staticBody
-arena_fixture_def = b2d.b2FixtureDef
-arena_fixture_def.shape = arena_shape_def
+
+#arena_fixture_def = b2d.b2FixtureDef
+#arena_fixture_def.shape = arena_shape_def
 
 make_arena = (world) ->
     body = world.CreateBody arena_body_def
-    fixture = body.CreateFixture arena_fixture_def
+    for fixture in arena_edge_fixtures
+        body.CreateFixture fixture
     body
 
 ##############################
 
-
-class Arena extends Thing
-    make_body: ->
+class Arena extends base_game.AbstractBody
+    type:'arena'
+    setup: ->
         @body = make_arena @game.world
+        @size = V arena_size, arena_size
 
-class PlayerPhysics extends Thing
-    make_body: ->
-        {@player1, @player2 @body} = make_players @game.world, origin
+class PlayerPhysics extends base_game.AbstractBody
+    type:'player'
+    setup: ->
+        {@player1, @player2, @body} = make_players @game.world, origin
 
-class Player
-    constructor: (@game, @user, @id=UUID()) ->
-        @clear_commands()
-        @user.player = @
-        @game.players[@id] = @
-        @name = @id
+class Player extends base_game.AbstractPlayer
+    constructor: (args) ->
+        {@shape} = args
+        super args
 
-        @physics = @game.player_object #new Thing @game, @id
+    remove: ->
+        delete players[@id]
+        @physics.remove()
 
-    press: (command) ->
-        @commands[command] = true
+class Game extends base_game.AbstractGame
+    constructor:(args, sockets, id) ->
+        {@challenger, @challengee} = args
+        super sockets, id
 
-    release: (command) ->
-        delete @commands[command]
+    setup: ->
+        @arena = new Arena @
+        @player_body = new PlayerPhysics @
 
-    clear_commands: ->
-        @commands = {}
+        new Player 
+            game:@
+            user:@challenger 
+            shape:@player_physics.player1
 
-    other_player: ->
-        for id, player of @game.players
-            return player if id != @id
+        new Player
+            game:@
+            user:@challengee
+            shape:@player_physics.player2
 
-    control: ->
-        position = 
+    ###
+    control_players: ->
         player1_position = player1.body.GetPosition()
         player2_position = player2.body.GetPosition()
         player1_direction = player2_position.minus(player1_position).normalize()
@@ -176,42 +203,13 @@ class Player
             @physics.force V 0, -1
         if @commands.down
             @physics.force V 0, +1
-
-    remove: ->
-        delete players[@id]
-        @physics.remove()
-
+    ###
+    teardown: ->
+        @player_body.remove()
 
 
 
-make_heap = (location) ->
-    size = 1
-    elevation = 3
-    for index in [0..10]
-        make_square
-            position:V(location, index*2)
-
-make_level = ->
-    make_heap 2
-
-hurt_player = (player, damage) ->
-    player.hit_points -= damage
-    #console.log "#{player.name} was hit for #{damage}. #{player.hit_points} HP remaining. #{Date()}"
-    $("#player#{player.which}_hit_points").text Math.round player.hit_points
-    if player.hit_points < 0
-        winner = other_player player
-        game_over = true
-        #console.log "#{winner.name} wins!"
-        $("#winner").text("#{winner.name} wins!").addClass("player#{winner.which}")
-
-#################
-
-class Game extends base_game.AbstractGame
-    setup: ->
-        @arena = new Arena @
-        @player_physics = new PlayerPhysics @
-
-#################
+###
 
 get_type = (shape) -> shape.GetBody().GetUserData().type
 get_data = (shape) -> shape.GetBody().GetUserData()
@@ -231,8 +229,6 @@ contact_listener.Result = (contact) ->
             hurt_player(player, contact.normalImpulse)
 
 world.SetContactListener contact_listener
-
-##################
 
 player1 = make_square
     position:V(-2, 2)
@@ -261,3 +257,26 @@ if use_joint
     joint_definition.Initialize player1.body, player2.body,
         player1.body.GetPosition(), player2.body.GetPosition()
     joint = world.CreateJoint joint_definition
+
+make_heap = (location) ->
+    size = 1
+    elevation = 3
+    for index in [0..10]
+        make_square
+            position:V(location, index*2)
+
+make_level = ->
+    make_heap 2
+
+hurt_player = (player, damage) ->
+    player.hit_points -= damage
+    #console.log "#{player.name} was hit for #{damage}. #{player.hit_points} HP remaining. #{Date()}"
+    $("#player#{player.which}_hit_points").text Math.round player.hit_points
+    if player.hit_points < 0
+        winner = other_player player
+        game_over = true
+        #console.log "#{winner.name} wins!"
+        $("#winner").text("#{winner.name} wins!").addClass("player#{winner.which}")
+###
+
+exports.Game = Game

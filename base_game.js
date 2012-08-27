@@ -21,6 +21,8 @@
 
   AbstractBody = (function() {
 
+    AbstractBody.prototype.type = 'body';
+
     function AbstractBody(game, id) {
       this.game = game;
       this.id = id != null ? id : UUID();
@@ -29,11 +31,7 @@
     }
 
     AbstractBody.prototype.toJSON = function() {
-      return {
-        id: this.id,
-        position: this.body.GetPosition(),
-        angle: this.body.GetAngle()
-      };
+      return _.extend(this.changes(), this.unchanges());
     };
 
     AbstractBody.prototype.force = function(vector, position) {
@@ -51,6 +49,13 @@
       };
     };
 
+    AbstractBody.prototype.unchanges = function() {
+      return {
+        type: this.type,
+        size: this.size
+      };
+    };
+
     AbstractBody.prototype.remove = function() {
       this.game.world.DestroyBody(this.body);
       return delete this.game.bodies[this.id];
@@ -62,16 +67,29 @@
 
   AbstractPlayer = (function() {
 
-    function AbstractPlayer(game, user, id) {
-      this.game = game;
-      this.user = user;
-      this.id = id != null ? id : UUID();
+    function AbstractPlayer(_arg) {
+      var _ref;
+      this.game = _arg.game, this.user = _arg.user, this.id = _arg.id;
+      if ((_ref = this.id) == null) {
+        this.id = UUID();
+      }
       this.clear_commands();
       this.game.players[this.id] = this;
       this.user.player = this;
       this.name = this.id;
       this.setup();
     }
+
+    AbstractPlayer.prototype.other_player = function() {
+      var id, player, _ref;
+      _ref = this.game.players;
+      for (id in _ref) {
+        player = _ref[id];
+        if (id !== this.id) {
+          return player;
+        }
+      }
+    };
 
     AbstractPlayer.prototype.press = function(command) {
       return this.commands[command] = true;
@@ -87,8 +105,10 @@
 
     AbstractPlayer.prototype.remove = function() {
       delete players[this.id];
-      return this.body.remove();
+      return this.teardown();
     };
+
+    AbstractPlayer.prototype.teardown = function() {};
 
     return AbstractPlayer;
 
@@ -112,20 +132,35 @@
     };
 
     AbstractGame.prototype.step = function() {
-      var body, changes, id, player, _ref;
+      this.control_players();
+      this.step_world();
+      return this.broadcast_changes();
+    };
+
+    AbstractGame.prototype.control_players = function() {
+      var id, player, _ref, _results;
       _ref = this.players;
+      _results = [];
       for (id in _ref) {
         player = _ref[id];
-        player.control();
+        _results.push(player.control());
       }
+      return _results;
+    };
+
+    AbstractGame.prototype.step_world = function() {
       this.world.Step(frame_rate.frame_length_seconds, 10, 10);
-      this.world.ClearForces();
+      return this.world.ClearForces();
+    };
+
+    AbstractGame.prototype.broadcast_changes = function() {
+      var body, changes, id;
       changes = (function() {
-        var _ref1, _results;
-        _ref1 = this.bodies;
+        var _ref, _results;
+        _ref = this.bodies;
         _results = [];
-        for (id in _ref1) {
-          body = _ref1[id];
+        for (id in _ref) {
+          body = _ref[id];
           if (body.body.IsAwake()) {
             _results.push(body.changes());
           }
@@ -144,8 +179,10 @@
 
     AbstractGame.prototype.remove = function() {
       clearTimeout(this.timer);
-      return delete games[this.id];
+      return this.teardown();
     };
+
+    AbstractGame.prototype.teardown = function() {};
 
     return AbstractGame;
 

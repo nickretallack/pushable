@@ -20,7 +20,7 @@ _ = require 'underscore'
 UUID = require('./library/uuid').UUID
 
 BasicGame = require('./basic_game').Game
-
+SpinBashersGame = require('./spin_bashers_server').Game
 
 json_response = (response, object) ->
     response.writeHead 200,

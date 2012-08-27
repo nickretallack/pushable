@@ -101,8 +101,14 @@
 
     PushableGame.prototype.setup = function() {
       this.world = new b2d.b2World(gravity, true);
-      new Player(this, this.challenger);
-      return new Player(this, this.challengee);
+      new Player({
+        game: this,
+        user: this.challenger
+      });
+      return new Player({
+        game: this,
+        user: this.challengee
+      });
     };
 
     return PushableGame;

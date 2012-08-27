@@ -17,14 +17,13 @@ diagonals = [
 ]
 
 class AbstractBody
+    type:'body'
     constructor:(@game, @id=UUID())->
         @game.bodies[@id] = @
         @setup()
 
     toJSON: ->
-        id:@id
-        position:@body.GetPosition()
-        angle:@body.GetAngle()
+        _.extend @changes(), @unchanges()
 
     force: (vector, position=@body.GetPosition()) ->
         @body.ApplyForce vector, position
@@ -34,17 +33,27 @@ class AbstractBody
         position:@body.GetPosition()
         angle:@body.GetAngle()
 
+    unchanges: ->
+        type:@type
+        size:@size
+
     remove: ->
         @game.world.DestroyBody @body
         delete @game.bodies[@id]
 
 class AbstractPlayer
-    constructor: (@game, @user, @id=UUID()) ->
+    constructor: ({@game, @user, @id}) ->
+        @id ?= UUID()
         @clear_commands()
         @game.players[@id] = @
         @user.player = @
         @name = @id
         @setup()
+
+    other_player: ->
+        # Useful for two-player games
+        for id, player of @game.players
+            return player if id != @id
 
     press: (command) ->
         @commands[command] = true
@@ -57,7 +66,9 @@ class AbstractPlayer
 
     remove: ->
         delete players[@id]
-        @body.remove()
+        @teardown()
+
+    teardown: ->
 
 class AbstractGame
     constructor: (@sockets, @id=UUID())->
@@ -72,12 +83,19 @@ class AbstractGame
         @timer = setInterval @step, frame_rate.frame_length_milliseconds
 
     step: ->
+        @control_players()
+        @step_world()
+        @broadcast_changes()
+
+    control_players: ->
         for id, player of @players
             player.control()
 
+    step_world: ->
         @world.Step frame_rate.frame_length_seconds, 10, 10
         @world.ClearForces()
 
+    broadcast_changes: ->
         changes = (body.changes() for id, body of @bodies when body.body.IsAwake())
         @sockets.in(@channel).volatile.emit 'update', changes
 
@@ -87,7 +105,9 @@ class AbstractGame
 
     remove: ->
         clearTimeout @timer
-        delete games[@id]
+        @teardown()
+
+    teardown: ->
 
 exports.cardinals = cardinals
 exports.diagonals = diagonals

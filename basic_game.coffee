@@ -45,7 +45,11 @@ class PushableGame extends base_game.AbstractGame
     setup: ->        
         @world = new b2d.b2World gravity, true
 
-        new Player @, @challenger
-        new Player @, @challengee
+        new Player 
+            game:@
+            user:@challenger
+        new Player
+            game:@
+            user:@challengee
 
 exports.Game = PushableGame
