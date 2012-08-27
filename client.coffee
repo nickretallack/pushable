@@ -35,7 +35,6 @@ module.factory 'networking', ($rootScope) ->
 
     socket = io.connect()
     socket.on 'connect', ->
-        console.log 'connected'
         socket.emit 'join_chat'
 
     socket.on 'user_identity', (user_data) -> ui ->
@@ -148,24 +147,24 @@ module.factory 'networking', ($rootScope) ->
     class Thing
         constructor: ({@size, @position, @id, @game}) ->
             @game.things[@id] = @
-            @element = $ '<div class="player"></div>'
-            @element.css
+            @node = $ '<div class="player"></div>'
+            @node.css
                 width:meters_to_pixels @size.x
                 height:meters_to_pixels @size.y
                 left:meters_to_pixels(@position.x) + 200
-                top:meters_to_pixels(@position.y) + 200
+                top:@game.node.innerHeight() - meters_to_pixels(@position.y) + 200
                 'background-color':"##{@id[...6]}"
-            @game.node.append @element
+            @game.node.append @node
 
         update: (@position) ->
             css = 
                 left:meters_to_pixels(@position.x) + 200
-                top:meters_to_pixels(@position.y) + 200
+                top:@game.node.innerHeight() - meters_to_pixels(@position.y) + 200
             css["#{vendor_prefix}-transition"] = "left #{frame_rate.frame_length_seconds}s, top #{frame_rate.frame_length_seconds}s"
-            @element.css css
+            @node.css css
 
         remove: ->
-            @element.remove()
+            @node.remove()
             delete @game.things[@id]
 
 
@@ -177,8 +176,6 @@ module.factory 'networking', ($rootScope) ->
         Challenge:Challenge
         Message:Message
         User:User
-
-
 
 module.config ($routeProvider) ->
     $routeProvider.when '/', templateUrl:'home', controller:'home'

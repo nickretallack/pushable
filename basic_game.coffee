@@ -1,14 +1,13 @@
-
-b2d = require 'box2dnode'
+base_game = require './base_game'
 V = require('./server_box2d_vector').V
-frame_rate = require './frame_rate'
+b2d = require 'box2dnode'
 _ = require 'underscore'
-UUID = require('./library/uuid').UUID
 
 # constants
-gravity = V 0, 0 #-9.8
+gravity = V 0, 0
 speed = 20
 box_size = V 2,2
+
 box_body_def = new b2d.b2BodyDef
 box_body_def.type = b2d.b2Body.b2_dynamicBody
 #bodyDef.position.Set 0.0, 4.0
@@ -19,91 +18,34 @@ box_fixture_def.shape = box_shape_def
 box_fixture_def.density = 1.0
 box_fixture_def.friction = 0.3
 box_body_def.linearDamping = 1
-box_body_def
 
-things = {}
-class Thing
-    constructor:(@game, @id=UUID())->
+class PlayerBody extends base_game.AbstractBody
+    setup: ->
         @body = @game.world.CreateBody box_body_def
         @body.CreateFixture box_fixture_def
-        @game.things[@id] = @
 
     toJSON: ->
-        id:@id
-        size:box_size
-        position:@body.GetPosition()
+        _.extend super(),
+            size:box_size
 
-    force: (direction) ->
-        @body.ApplyForce direction.scale(speed), @body.GetPosition()
-
-    changes: ->
-        id:@id
-        position:@body.GetPosition()
-
-    remove: ->
-        @game.world.DestroyBody @body
-        delete things[@id]
-
-players = {}
-class Player
-    constructor: (@game, @user, @id=UUID()) ->
-        @user.player = @
-        @physics = new Thing @game, @id
-        @clear_commands()
-        @game.players[@id] = @
-        @name = @id
-
-    press: (command) ->
-        @commands[command] = true
-
-    release: (command) ->
-        delete @commands[command]
-
-    clear_commands: ->
-        @commands = {}
+class Player extends base_game.AbstractPlayer
+    setup: ->
+        @body = new PlayerBody @game, @id
 
     control: ->
-        if @commands.left
-            @physics.force V -1, 0
-        if @commands.right
-            @physics.force V +1, 0
-        if @commands.up
-            @physics.force V 0, -1
-        if @commands.down
-            @physics.force V 0, +1
+        for direction, vector of base_game.cardinals
+            if @commands[direction]
+                @body.force vector.scale speed
 
-    remove: ->
-        delete players[@id]
-        @physics.remove()
+class PushableGame extends base_game.AbstractGame
+    constructor:(args, sockets, id) ->
+        {@challenger, @challengee} = args
+        super sockets, id
 
-class Game
-    constructor: ({challenger, challengee}, @sockets, @id=UUID())->
-        @channel = "game-#{@id}"
+    setup: ->        
         @world = new b2d.b2World gravity, true
-        @players = {}
-        @things = {}
 
-        new Player @, challenger
-        new Player @, challengee
+        new Player @, @challenger
+        new Player @, @challengee
 
-        update = =>
-            for id, player of @players
-                player.control()
-
-            @world.Step frame_rate.frame_length_seconds, 10, 10
-            @world.ClearForces()
-
-            changes = (thing.changes() for id, thing of @things when thing.body.IsAwake())
-            @sockets.in(@channel).volatile.emit 'update', changes
-
-        @timer = setInterval update, frame_rate.frame_length_milliseconds
-
-    toJSON: ->
-        id:@id
-        things:@things
-
-    remove: ->
-        clearTimeout @timer
-        delete games[@id]
-
-exports.Game = Game
+exports.Game = PushableGame

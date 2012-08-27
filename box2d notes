@@ -1,0 +1,2 @@
+box2d notes:
+set the position in the body definition before creating the body.

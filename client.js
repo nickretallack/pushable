@@ -70,7 +70,6 @@
     })();
     socket = io.connect();
     socket.on('connect', function() {
-      console.log('connected');
       return socket.emit('join_chat');
     });
     socket.on('user_identity', function(user_data) {
@@ -221,15 +220,15 @@
       function Thing(_arg) {
         this.size = _arg.size, this.position = _arg.position, this.id = _arg.id, this.game = _arg.game;
         this.game.things[this.id] = this;
-        this.element = $('<div class="player"></div>');
-        this.element.css({
+        this.node = $('<div class="player"></div>');
+        this.node.css({
           width: meters_to_pixels(this.size.x),
           height: meters_to_pixels(this.size.y),
           left: meters_to_pixels(this.position.x) + 200,
-          top: meters_to_pixels(this.position.y) + 200,
+          top: this.game.node.innerHeight() - meters_to_pixels(this.position.y) + 200,
           'background-color': "#" + this.id.slice(0, 6)
         });
-        this.game.node.append(this.element);
+        this.game.node.append(this.node);
       }
 
       Thing.prototype.update = function(position) {
@@ -237,14 +236,14 @@
         this.position = position;
         css = {
           left: meters_to_pixels(this.position.x) + 200,
-          top: meters_to_pixels(this.position.y) + 200
+          top: this.game.node.innerHeight() - meters_to_pixels(this.position.y) + 200
         };
         css["" + vendor_prefix + "-transition"] = "left " + frame_rate.frame_length_seconds + "s, top " + frame_rate.frame_length_seconds + "s";
-        return this.element.css(css);
+        return this.node.css(css);
       };
 
       Thing.prototype.remove = function() {
-        this.element.remove();
+        this.node.remove();
         return delete this.game.things[this.id];
       };
 

@@ -1,5 +1,4 @@
 port = 8003
-speed = 20
 
 socket_io = require 'socket.io'
 express = require 'express'
