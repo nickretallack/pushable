@@ -5,7 +5,7 @@
   module = angular.module('game', []);
 
   module.factory('networking', function($rootScope) {
-    var Challenge, Game, Message, Thing, User, accept_challenge, active_commands, bind_keyboard, bless_and_map, bless_list, blur_handler, commands, get_command, get_key_name, keydown_handler, keyup_handler, meters_to_pixels, send_challenge, send_chat, set_keyboard_events, socket, state, ui, unbind_keyboard;
+    var Arena, Challenge, Game, Message, Thing, User, accept_challenge, active_commands, bind_keyboard, bless_and_map, bless_list, blur_handler, commands, get_command, get_key_name, keydown_handler, keyup_handler, meters_to_pixels, screen_coordinates, send_challenge, send_chat, set_keyboard_events, socket, state, ui, unbind_keyboard;
     ui = function(procedure) {
       return $rootScope.$apply(procedure);
     };
@@ -180,6 +180,12 @@
     meters_to_pixels = function(meters) {
       return meters * 20;
     };
+    screen_coordinates = function(position, size) {
+      return {
+        left: (meters_to_pixels(position.x - size.x / 2)) + window.innerWidth / 2,
+        top: window.innerHeight / 2 - (meters_to_pixels(position.y + size.y / 2))
+      };
+    };
     Game = (function() {
 
       function Game(_arg) {
@@ -218,26 +224,23 @@
     Thing = (function() {
 
       function Thing(_arg) {
+        var coords;
         this.size = _arg.size, this.position = _arg.position, this.id = _arg.id, this.game = _arg.game;
         this.game.things[this.id] = this;
         this.node = $('<div class="player"></div>');
-        this.node.css({
+        coords = screen_coordinates(this.position, this.size);
+        this.node.css(_.extend(coords, {
           width: meters_to_pixels(this.size.x),
           height: meters_to_pixels(this.size.y),
-          left: meters_to_pixels(this.position.x) + 200,
-          top: this.game.node.innerHeight() - meters_to_pixels(this.position.y) + 200,
           'background-color': "#" + this.id.slice(0, 6)
-        });
+        }));
         this.game.node.append(this.node);
       }
 
       Thing.prototype.update = function(position) {
         var css;
         this.position = position;
-        css = {
-          left: meters_to_pixels(this.position.x) + 200,
-          top: this.game.node.innerHeight() - meters_to_pixels(this.position.y) + 200
-        };
+        css = screen_coordinates(this.position, this.size);
         css["" + vendor_prefix + "-transition"] = "left " + frame_rate.frame_length_seconds + "s, top " + frame_rate.frame_length_seconds + "s";
         return this.node.css(css);
       };
@@ -248,6 +251,25 @@
       };
 
       return Thing;
+
+    })();
+    Arena = (function() {
+
+      function Arena(_arg) {
+        var coords;
+        this.size = _arg.size, this.position = _arg.position, this.id = _arg.id, this.game = _arg.game;
+        this.game.things[this.id] = this;
+        this.node = $('<div class="arena"></div>');
+        coords = screen_coordinates(this.position, this.size);
+        this.node.css(_.extend(coords, {
+          width: meters_to_pixels(this.size.x),
+          height: meters_to_pixels(this.size.y),
+          'background-color': "#" + this.id.slice(0, 6)
+        }));
+        this.game.node.append(this.node);
+      }
+
+      return Arena;
 
     })();
     return {

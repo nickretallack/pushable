@@ -125,6 +125,9 @@ module.factory 'networking', ($rootScope) ->
         state.game.things[id].remove()
 
     meters_to_pixels = (meters) -> meters * 20
+    screen_coordinates = (position,size) ->
+        left: (meters_to_pixels position.x - size.x / 2) + window.innerWidth / 2
+        top: window.innerHeight / 2 - (meters_to_pixels position.y + size.y / 2)
 
     class Game
         constructor:({@id, things}) ->
@@ -148,24 +151,34 @@ module.factory 'networking', ($rootScope) ->
         constructor: ({@size, @position, @id, @game}) ->
             @game.things[@id] = @
             @node = $ '<div class="player"></div>'
-            @node.css
+            coords = screen_coordinates @position, @size
+            @node.css _.extend coords,
                 width:meters_to_pixels @size.x
                 height:meters_to_pixels @size.y
-                left:meters_to_pixels(@position.x) + 200
-                top:@game.node.innerHeight() - meters_to_pixels(@position.y) + 200
                 'background-color':"##{@id[...6]}"
             @game.node.append @node
 
         update: (@position) ->
-            css = 
-                left:meters_to_pixels(@position.x) + 200
-                top:@game.node.innerHeight() - meters_to_pixels(@position.y) + 200
+            css = screen_coordinates @position,@size
             css["#{vendor_prefix}-transition"] = "left #{frame_rate.frame_length_seconds}s, top #{frame_rate.frame_length_seconds}s"
             @node.css css
 
         remove: ->
             @node.remove()
             delete @game.things[@id]
+
+    class Arena
+        constructor: ({@size, @position, @id, @game}) ->
+            @game.things[@id] = @
+            @node = $ '<div class="arena"></div>'
+            coords = screen_coordinates @position, @size
+            @node.css _.extend coords,
+                width:meters_to_pixels @size.x
+                height:meters_to_pixels @size.y
+                #left:meters_to_pixels(@position.x) + 200
+                #top:@game.node.innerHeight() - meters_to_pixels(@position.y) + 200
+                'background-color':"##{@id[...6]}"
+            @game.node.append @node
 
 
     state:state
@@ -185,6 +198,8 @@ module.controller 'home', ($scope, $location, networking) ->
     $scope.get_game = -> networking.state.game
 
 module.controller 'game', ($scope) ->
+
+
 
 
 module.directive 'userList', ->

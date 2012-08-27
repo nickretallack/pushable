@@ -21,6 +21,7 @@ UUID = require('./library/uuid').UUID
 
 BasicGame = require('./basic_game').Game
 SpinBashersGame = require('./spin_bashers_server').Game
+DefaultGame = BasicGame
 
 json_response = (response, object) ->
     response.writeHead 200,
@@ -94,7 +95,7 @@ io.sockets.on 'connection', (socket) ->
 
     socket.on 'accept_challenge', (challenge_id) ->
         challenge = challenges[challenge_id]
-        game = new SpinBashersGame challenge, io.sockets
+        game = new DefaultGame challenge, io.sockets
         games[game.id] = game
 
         challenge.challenger.socket.join game.channel
