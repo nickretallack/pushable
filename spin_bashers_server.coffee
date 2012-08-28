@@ -29,14 +29,19 @@ world_size = V 2000, 2000
 world_padding = 50
 gravity = origin
 
+make_damped_body_def = ->
+    def = new b2d.b2BodyDef
+    def.type = b2d.b2Body.b2_dynamicBody
+    def.linearDamping = 1
+    def.angularDamping = 1
+    return def
+
 # Shape
 player_radius = 1
 player_shape_def = new b2d.b2CircleShape(player_radius)
 
 # Body definition
-players_body_def = new b2d.b2BodyDef
-players_body_def.type = b2d.b2Body.b2_dynamicBody
-players_body_def.linearDamping = 1
+players_body_def = make_damped_body_def()
 
 # Fixture definition
 player_fixture_def = new b2d.b2FixtureDef
@@ -67,13 +72,6 @@ make_players = (world, position) ->
 
 ################
 
-make_damped_body_def = ->
-    def = new b2d.b2BodyDef
-    def.type = b2d.b2Body.b2_dynamicBody
-    def.linearDamping = 1
-    def.angularDamping = 1
-    return def
-
 crate_diameter = 2
 crate_shape_def = new b2d.b2PolygonShape
 crate_shape_def.SetAsBox crate_diameter, crate_diameter
@@ -96,8 +94,8 @@ make_crate = (world, position) ->
 arena_size = 10
 arena_edge_fixtures = []
 for index in [0...base_game.diagonals.length]
-    point1 = base_game.diagonals[index]
-    point2 = base_game.diagonals[(index+1) % base_game.diagonals.length]
+    point1 = base_game.diagonals[index].scale arena_size
+    point2 = base_game.diagonals[(index+1) % base_game.diagonals.length].scale arena_size
     edge = new b2d.b2EdgeShape point1, point2
     fixture_def = new b2d.b2FixtureDef
     fixture_def.shape = edge
@@ -109,7 +107,7 @@ for index in [0...base_game.diagonals.length]
 #arena_shape_def.CreateChain arena_coordinates
 
 arena_body_def = new b2d.b2BodyDef
-arena_body_def.type = b2d.b2Body.b2_staticBody
+#arena_body_def.type = b2d.b2Body.b2_staticBody
 #arena_body_def.position = origin
 
 #arena_fixture_def = b2d.b2FixtureDef
@@ -171,11 +169,13 @@ class Game extends base_game.AbstractGame
         body_position = @player_body.get_position()
         body_angle = @player_body.get_angle()
 
-        player1_offset = (V 0,half_player_distance).rotate body_angle
-        player2_offset = player1_offset.rotate Math.PI
+        # counteract rotation of the body to find position of the shapes
+        player1_offset = (V 0,half_player_distance).rotate -body_angle
+        player2_offset = player1_offset.scale -1
 
         player1_position = body_position.plus player1_offset
         player2_position = body_position.plus player2_offset
+
         for command, direction of base_game.cardinals
             if @player1.commands[command]
                 @player_body.body.ApplyForce direction.scale(force), player1_position

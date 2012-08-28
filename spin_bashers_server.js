@@ -56,15 +56,20 @@
 
   gravity = origin;
 
+  make_damped_body_def = function() {
+    var def;
+    def = new b2d.b2BodyDef;
+    def.type = b2d.b2Body.b2_dynamicBody;
+    def.linearDamping = 1;
+    def.angularDamping = 1;
+    return def;
+  };
+
   player_radius = 1;
 
   player_shape_def = new b2d.b2CircleShape(player_radius);
 
-  players_body_def = new b2d.b2BodyDef;
-
-  players_body_def.type = b2d.b2Body.b2_dynamicBody;
-
-  players_body_def.linearDamping = 1;
+  players_body_def = make_damped_body_def();
 
   player_fixture_def = new b2d.b2FixtureDef;
 
@@ -97,15 +102,6 @@
     };
   };
 
-  make_damped_body_def = function() {
-    var def;
-    def = new b2d.b2BodyDef;
-    def.type = b2d.b2Body.b2_dynamicBody;
-    def.linearDamping = 1;
-    def.angularDamping = 1;
-    return def;
-  };
-
   crate_diameter = 2;
 
   crate_shape_def = new b2d.b2PolygonShape;
@@ -135,8 +131,8 @@
   arena_edge_fixtures = [];
 
   for (index = _i = 0, _ref2 = base_game.diagonals.length; 0 <= _ref2 ? _i < _ref2 : _i > _ref2; index = 0 <= _ref2 ? ++_i : --_i) {
-    point1 = base_game.diagonals[index];
-    point2 = base_game.diagonals[(index + 1) % base_game.diagonals.length];
+    point1 = base_game.diagonals[index].scale(arena_size);
+    point2 = base_game.diagonals[(index + 1) % base_game.diagonals.length].scale(arena_size);
     edge = new b2d.b2EdgeShape(point1, point2);
     fixture_def = new b2d.b2FixtureDef;
     fixture_def.shape = edge;
@@ -144,8 +140,6 @@
   }
 
   arena_body_def = new b2d.b2BodyDef;
-
-  arena_body_def.type = b2d.b2Body.b2_staticBody;
 
   make_arena = function(world) {
     var body, fixture, _j, _len;
@@ -244,8 +238,8 @@
       var body_angle, body_position, command, direction, player1_offset, player2_offset, _ref3, _results;
       body_position = this.player_body.get_position();
       body_angle = this.player_body.get_angle();
-      player1_offset = (V(0, half_player_distance)).rotate(body_angle);
-      player2_offset = player1_offset.rotate(Math.PI);
+      player1_offset = (V(0, half_player_distance)).rotate(-body_angle);
+      player2_offset = player1_offset.scale(-1);
       player1_position = body_position.plus(player1_offset);
       player2_position = body_position.plus(player2_offset);
       _ref3 = base_game.cardinals;

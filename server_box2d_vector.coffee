@@ -25,7 +25,7 @@ Vector::subtract = (other) ->
     v.Subtract other
     v
 
-Vector::Rotate = (angle) -> @MulM new b2d.b2Mat22 angle# * radians_factor
+Vector::Rotate = (angle) -> @MulM new b2d.b2Mat22.FromAngle angle
 Vector::rotate = (angle) ->
     v = @Copy()
     v.Rotate angle

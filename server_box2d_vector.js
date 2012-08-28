@@ -36,7 +36,7 @@
   };
 
   Vector.prototype.Rotate = function(angle) {
-    return this.MulM(new b2d.b2Mat22(angle));
+    return this.MulM(new b2d.b2Mat22.FromAngle(angle));
   };
 
   Vector.prototype.rotate = function(angle) {

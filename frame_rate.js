@@ -41,6 +41,6 @@
     return m.frame_length_milliseconds = 1000.0 / m.frames_per_second;
   };
 
-  m.set_frame_rate(5);
+  m.set_frame_rate(20);
 
 }).call(this);
