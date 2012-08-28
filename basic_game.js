@@ -101,6 +101,10 @@
     function PushableGame(args, sockets, id) {
       this.challenger = args.challenger, this.challengee = args.challengee;
       PushableGame.__super__.constructor.call(this, sockets, id);
+      this.challenger.socket.join(this.channel);
+      this.challengee.socket.join(this.channel);
+      this.challenger.socket.emit('start_game', this);
+      this.challengee.socket.emit('start_game', this);
     }
 
     PushableGame.prototype.setup = function() {

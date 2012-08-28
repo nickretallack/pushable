@@ -45,6 +45,12 @@ class PushableGame extends base_game.AbstractGame
         {@challenger, @challengee} = args
         super sockets, id
 
+        @challenger.socket.join @channel
+        @challengee.socket.join @channel
+        @challenger.socket.emit 'start_game', @
+        @challengee.socket.emit 'start_game', @
+
+
     setup: ->
         @world = new b2d.b2World gravity, true
 

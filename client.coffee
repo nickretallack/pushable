@@ -63,6 +63,8 @@ module.factory 'networking', ($rootScope) ->
         state.messages.push new Challenge challenge
 
     socket.on 'start_game', (game) -> ui ->
+        if state.game?
+            state.game.remove()
         new Game game
 
     send_chat = (text) ->
@@ -151,6 +153,7 @@ module.factory 'networking', ($rootScope) ->
         remove: ->
             state.game = null
             unbind_keyboard()
+            @node.remove()
 
     class Thing
         constructor: ({@size, @position, @id, @game, @type}) ->

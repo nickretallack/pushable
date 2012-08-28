@@ -112,6 +112,9 @@
     });
     socket.on('start_game', function(game) {
       return ui(function() {
+        if (state.game != null) {
+          state.game.remove();
+        }
         return new Game(game);
       });
     });
@@ -227,7 +230,8 @@
 
       Game.prototype.remove = function() {
         state.game = null;
-        return unbind_keyboard();
+        unbind_keyboard();
+        return this.node.remove();
       };
 
       return Game;
