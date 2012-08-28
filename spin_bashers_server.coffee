@@ -133,6 +133,7 @@ class PlayerPhysics extends base_game.AbstractBody
     type:'player'
     setup: ->
         {@player1, @player2, @body} = make_players @game.world, origin
+        @size = V 8,8
 
 class Player extends base_game.AbstractPlayer
     constructor: (args) ->
@@ -147,6 +148,11 @@ class Game extends base_game.AbstractGame
     constructor:(args, sockets, id) ->
         {@challenger, @challengee} = args
         super sockets, id
+
+        @challenger.socket.join @channel
+        @challengee.socket.join @channel
+        @challenger.socket.emit 'start_game', @
+        @challengee.socket.emit 'start_game', @
 
     setup: ->
         @world = new b2d.b2World gravity, true

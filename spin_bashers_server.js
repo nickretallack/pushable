@@ -185,7 +185,8 @@
 
     PlayerPhysics.prototype.setup = function() {
       var _ref2;
-      return _ref2 = make_players(this.game.world, origin), this.player1 = _ref2.player1, this.player2 = _ref2.player2, this.body = _ref2.body, _ref2;
+      _ref2 = make_players(this.game.world, origin), this.player1 = _ref2.player1, this.player2 = _ref2.player2, this.body = _ref2.body;
+      return this.size = V(8, 8);
     };
 
     return PlayerPhysics;
@@ -217,6 +218,10 @@
     function Game(args, sockets, id) {
       this.challenger = args.challenger, this.challengee = args.challengee;
       Game.__super__.constructor.call(this, sockets, id);
+      this.challenger.socket.join(this.channel);
+      this.challengee.socket.join(this.channel);
+      this.challenger.socket.emit('start_game', this);
+      this.challengee.socket.emit('start_game', this);
     }
 
     Game.prototype.setup = function() {

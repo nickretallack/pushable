@@ -35,7 +35,7 @@
 
   SpinBashersGame = require('./spin_bashers_server').Game;
 
-  DefaultGame = BasicGame;
+  DefaultGame = SpinBashersGame;
 
   json_response = function(response, object) {
     response.writeHead(200, {
@@ -115,12 +115,21 @@
     user.socket = socket;
     socket.emit('user_identity', user);
     socket.on('join_chat', function() {
-      var channel;
+      var channel, game, user_list;
       channel = 'chat';
       socket.join(channel);
       socket.broadcast.to(channel).emit('user_join', user);
       socket.emit('user_list', _.values(users));
-      return socket.emit('chat_history', chat_history);
+      socket.emit('chat_history', chat_history);
+      user_list = _.values(users);
+      if (user_list.length === 2) {
+        console.log("yeah");
+        game = new DefaultGame({
+          challenger: user_list[0],
+          challengee: user_list[1]
+        }, io.sockets);
+        return games[game.id] = game;
+      }
     });
     socket.on('chat', function(text) {
       var message;

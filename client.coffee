@@ -136,7 +136,12 @@ module.factory 'networking', ($rootScope) ->
             @node = $ '<div></div>'
             @things = {}
             for id, thing of things
-                new Thing _.extend thing,
+                type = switch thing.type
+                    when 'arena' then Arena
+                    when 'player' then Player
+                    else Thing
+
+                new type _.extend thing,
                     game:@
 
         update: (things) ->
@@ -148,18 +153,26 @@ module.factory 'networking', ($rootScope) ->
             unbind_keyboard()
 
     class Thing
-        constructor: ({@size, @position, @id, @game}) ->
+        constructor: ({@size, @position, @id, @game, @type}) ->
             @game.things[@id] = @
-            @node = $ '<div class="player"></div>'
-            coords = screen_coordinates @position, @size
-            @node.css _.extend coords,
+            @node = @make_node()
+            css = @position_css()
+            @node.css _.extend css,
                 width:meters_to_pixels @size.x
                 height:meters_to_pixels @size.y
-                'background-color':"##{@id[...6]}"
             @game.node.append @node
 
+        make_node: ->
+            node = $ '<div class="#{@type}"></div>'
+            node.css
+                'background-color':"##{@id[...6]}"
+            node
+
+        position_css: ->
+            screen_coordinates @position,@size
+
         update: (@position) ->
-            css = screen_coordinates @position,@size
+            css = @position_css()
             css["#{vendor_prefix}-transition"] = "left #{frame_rate.frame_length_seconds}s, top #{frame_rate.frame_length_seconds}s"
             @node.css css
 
@@ -167,19 +180,18 @@ module.factory 'networking', ($rootScope) ->
             @node.remove()
             delete @game.things[@id]
 
-    class Arena
-        constructor: ({@size, @position, @id, @game}) ->
-            @game.things[@id] = @
-            @node = $ '<div class="arena"></div>'
-            coords = screen_coordinates @position, @size
-            @node.css _.extend coords,
-                width:meters_to_pixels @size.x
-                height:meters_to_pixels @size.y
-                #left:meters_to_pixels(@position.x) + 200
-                #top:@game.node.innerHeight() - meters_to_pixels(@position.y) + 200
-                'background-color':"##{@id[...6]}"
-            @game.node.append @node
+    class Player extends Thing
+        make_node: ->
+            node = $ """
+                <div class="bound-players">
+                    <div class="player1 shape"></div>
+                    <div class="player2 shape"></div>
+                    <div class="rope"></div>
+                </div>"""
 
+    class Arena extends Thing
+        make_node: ->
+            @node = $ '<div class="arena"></div>'
 
     state:state
     send_chat:send_chat

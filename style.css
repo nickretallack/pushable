@@ -10,3 +10,36 @@
     top:0; bottom:0; left:0; right:0;
     overflow:hidden;
 }
+
+.arena {
+    border:5px solid black;
+    position:absolute;
+}
+
+.bound-players {
+    position:absolute;
+}
+
+.bound-players .shape {
+    width:20px;
+    height:20px;
+    position:absolute;
+    margin:-10px;
+    left:50%;
+}
+.bound-players .player1 {
+    background:red;
+    top:0;
+}
+.bound-players .player2 {
+    background:blue;
+    bottom:0;
+}
+
+.bound-players .rope {
+    position:absolute;
+    width:0;
+    left:50%;
+    top:0; bottom:0;
+    border:1px solid black;
+}

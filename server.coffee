@@ -21,7 +21,7 @@ UUID = require('./library/uuid').UUID
 
 BasicGame = require('./basic_game').Game
 SpinBashersGame = require('./spin_bashers_server').Game
-DefaultGame = BasicGame
+DefaultGame = SpinBashersGame
 
 json_response = (response, object) ->
     response.writeHead 200,
@@ -73,6 +73,15 @@ io.sockets.on 'connection', (socket) ->
         socket.broadcast.to(channel).emit 'user_join', user
         socket.emit 'user_list', _.values users
         socket.emit 'chat_history', chat_history
+
+        user_list = _.values users
+        if user_list.length is 2
+            console.log "yeah"
+            game = new DefaultGame
+                challenger:user_list[0]
+                challengee:user_list[1]
+            , io.sockets
+            games[game.id] = game
 
     socket.on 'chat', (text) ->
         message = 
