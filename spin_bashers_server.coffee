@@ -1,6 +1,7 @@
 # dependencies
 b2d = require 'box2dnode'
-V = require('./server_box2d_vector').V
+{V, Vector} = require('./server_box2d_vector')
+b2d.b2Vec2 = Vector
 frame_rate = require './frame_rate'
 _ = require 'underscore'
 UUID = require('./library/uuid').UUID
@@ -70,6 +71,7 @@ make_damped_body_def = ->
     def = new b2d.b2BodyDef
     def.type = b2d.b2Body.b2_dynamicBody
     def.linearDamping = 1
+    def.angularDamping = 1
     return def
 
 crate_diameter = 2
@@ -91,15 +93,13 @@ make_crate = (world, position) ->
 
 ################
 
-arena_size = 30
+arena_size = 10
 arena_edge_fixtures = []
 for index in [0...base_game.diagonals.length]
     point1 = base_game.diagonals[index]
     point2 = base_game.diagonals[(index+1) % base_game.diagonals.length]
     edge = new b2d.b2EdgeShape point1, point2
-    #debugger
-    #edge.Set point1, point2
-    fixture_def = b2d.b2FixtureDef
+    fixture_def = new b2d.b2FixtureDef
     fixture_def.shape = edge
     arena_edge_fixtures.push
 
@@ -140,9 +140,7 @@ class Player extends base_game.AbstractPlayer
         {@shape} = args
         super args
 
-    remove: ->
-        delete players[@id]
-        @physics.remove()
+    control: ->
 
 class Game extends base_game.AbstractGame
     constructor:(args, sockets, id) ->
@@ -159,35 +157,46 @@ class Game extends base_game.AbstractGame
         @arena = new Arena @
         @player_body = new PlayerPhysics @
 
-        new Player 
+        @player1 = new Player 
             game:@
             user:@challenger 
             shape:@player_body.player1
 
-        new Player
+        @player2 = new Player
             game:@
             user:@challengee
             shape:@player_body.player2
 
     control_players: ->
-    ###
-        player1_position = player1.body.GetPosition()
-        player2_position = player2.body.GetPosition()
+        body_position = @player_body.get_position()
+        body_angle = @player_body.get_angle()
+
+        player1_offset = (V 0,half_player_distance).rotate body_angle
+        player2_offset = player1_offset.rotate Math.PI
+
+        player1_position = body_position.plus player1_offset
+        player2_position = body_position.plus player2_offset
+        for command, direction of base_game.cardinals
+            if @player1.commands[command]
+                @player_body.body.ApplyForce direction.scale(force), player1_position
+            if @player2.commands[command]
+                @player_body.body.ApplyForce direction.scale(force), player2_position
+        #super
+
+        #player1 = @player1
+        #player2 = @player2
+
+        ###
+        player1_position = player1.body.body.GetPosition()
+        player2_position = player2.body.body.GetPosition()
         player1_direction = player2_position.minus(player1_position).normalize()
         center = player1_position.plus player2_position.minus(player1_position).scale(0.5)
 
-        player1_controls = controls[current_controls].player1
-        player2_controls = controls[current_controls].player2
-        player1_clockwise = pressed_keys[player1_controls.clockwise] or false
-        player2_clockwise = pressed_keys[player2_controls.clockwise] or false
-        player1_counter_clockwise = pressed_keys[player1_controls.counter_clockwise] or false
-        player2_counter_clockwise = pressed_keys[player2_controls.counter_clockwise] or false
+        player1_clockwise = player1.commands.clockwise or false
+        player2_clockwise = player2.commands.clockwise or false
+        player1_counter_clockwise = player1.commands.counter_clockwise or false
+        player2_counter_clockwise = player2.commands.counter_clockwise or false
 
-        for key, direction of base_game.cardinals
-            if pressed_keys[player1_controls[key]]
-                player1.body.ApplyForce direction.scale(force), player1_position
-            if pressed_keys[player2_controls[key]]
-                player2.body.ApplyForce direction.scale(force), player2_position
 
         player1_rotation_commitment = if player1_clockwise is player1_counter_clockwise then 0 else if player1_clockwise then 1 else -1
         player2_rotation_commitment = if player2_clockwise is player2_counter_clockwise then 0 else if player2_clockwise then 1 else -1
@@ -195,27 +204,15 @@ class Game extends base_game.AbstractGame
         if player1_rotation_commitment isnt -player2_rotation_commitment
             if player1_rotation_commitment isnt 0
                 force_direction = player1_direction.scale(-1).rotate force_angle * player1_rotation_commitment
-                player2.body.ApplyForce force_direction.scale(force), player2_position
+                player2.body.body.ApplyForce force_direction.scale(force), player2_position
             
             if player2_rotation_commitment isnt 0
                 force_direction2 = player1_direction.rotate force_angle * player2_rotation_commitment
-                player1.body.ApplyForce force_direction2.scale(force), player1_position
+                player1.body.body.ApplyForce force_direction2.scale(force), player1_position
+        ###
 
-
-
-        if @commands.left
-            @physics.force V -1, 0
-        if @commands.right
-            @physics.force V +1, 0
-        if @commands.up
-            @physics.force V 0, -1
-        if @commands.down
-            @physics.force V 0, +1
-    ###
     teardown: ->
         @player_body.remove()
-
-
 
 ###
 

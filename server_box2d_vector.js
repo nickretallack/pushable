@@ -22,20 +22,33 @@
   };
 
   Vector.prototype.add = function(other) {
-    return this.Copy().Add(other);
+    var v;
+    v = this.Copy();
+    v.Add(other);
+    return v;
   };
 
   Vector.prototype.subtract = function(other) {
-    return this.Copy().Subtract(other);
+    var v;
+    v = this.Copy();
+    v.Subtract(other);
+    return v;
   };
 
   Vector.prototype.Rotate = function(angle) {
-    return this.MulM(new b2Mat22(angle * radians_factor));
+    return this.MulM(new b2d.b2Mat22(angle));
   };
 
   Vector.prototype.rotate = function(angle) {
-    return this.Copy().Rotate(angle);
+    var v;
+    v = this.Copy();
+    v.Rotate(angle);
+    return v;
   };
+
+  Vector.prototype.minus = Vector.prototype.subtract;
+
+  Vector.prototype.plus = Vector.prototype.add;
 
   V = function() {
     return (function(func, args, ctor) {

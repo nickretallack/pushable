@@ -35,6 +35,8 @@ class AbstractBody
     force: (vector, position=@body.GetPosition()) ->
         @body.ApplyForce vector, position
 
+    get_angle: -> @body.GetAngle()
+    get_position: -> @body.GetPosition()
     changes: ->
         id:@id
         position:@body.GetPosition()
@@ -68,6 +70,7 @@ class AbstractPlayer
             return player if id != @id
 
     press: (command) ->
+        console.log command
         @commands[command] = true
 
     release: (command) ->

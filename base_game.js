@@ -50,6 +50,14 @@
       return this.body.ApplyForce(vector, position);
     };
 
+    AbstractBody.prototype.get_angle = function() {
+      return this.body.GetAngle();
+    };
+
+    AbstractBody.prototype.get_position = function() {
+      return this.body.GetPosition();
+    };
+
     AbstractBody.prototype.changes = function() {
       return {
         id: this.id,
@@ -107,6 +115,7 @@
     };
 
     AbstractPlayer.prototype.press = function(command) {
+      console.log(command);
       return this.commands[command] = true;
     };
 

@@ -16,11 +16,23 @@ Vector::Scale = (scalar) ->
     @x *= scalar
     @y *= scalar
 
-Vector::add = (other) -> @Copy().Add other
-Vector::subtract = (other) -> @Copy().Subtract other
+Vector::add = (other) ->
+    v = @Copy()
+    v.Add other
+    v
+Vector::subtract = (other) ->
+    v = @Copy()
+    v.Subtract other
+    v
 
-Vector::Rotate = (angle) -> @MulM new b2Mat22 angle * radians_factor
-Vector::rotate = (angle) -> @Copy().Rotate angle
+Vector::Rotate = (angle) -> @MulM new b2d.b2Mat22 angle# * radians_factor
+Vector::rotate = (angle) ->
+    v = @Copy()
+    v.Rotate angle
+    v
+
+Vector::minus = Vector::subtract
+Vector::plus = Vector::add
 
 # Handles the 'new' part for you
 V = -> new Vector arguments...

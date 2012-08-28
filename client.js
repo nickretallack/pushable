@@ -223,7 +223,7 @@
         _results = [];
         for (_i = 0, _len = things.length; _i < _len; _i++) {
           thing = things[_i];
-          _results.push(this.things[thing.id].update(thing.position));
+          _results.push(this.things[thing.id].update(thing));
         }
         return _results;
       };
@@ -241,10 +241,12 @@
 
       function Thing(_arg) {
         var css;
-        this.size = _arg.size, this.position = _arg.position, this.id = _arg.id, this.game = _arg.game, this.type = _arg.type;
+        this.size = _arg.size, this.position = _arg.position, this.angle = _arg.angle, this.id = _arg.id, this.game = _arg.game, this.type = _arg.type;
         this.game.things[this.id] = this;
         this.node = this.make_node();
         css = this.position_css();
+        css["" + vendor_prefix + "-transition"] = "left " + frame_rate.frame_length_seconds + "s, top " + frame_rate.frame_length_seconds + "s, " + vendor_prefix + "-transform " + frame_rate.frame_length_seconds + "s";
+        css["" + vendor_prefix + "-transform-origin"] = "50% 50%";
         this.node.css(_.extend(css, {
           width: meters_to_pixels(this.size.x),
           height: meters_to_pixels(this.size.y)
@@ -262,14 +264,16 @@
       };
 
       Thing.prototype.position_css = function() {
-        return screen_coordinates(this.position, this.size);
+        var css;
+        css = screen_coordinates(this.position, this.size);
+        css["" + vendor_prefix + "-transform"] = "rotate(" + this.angle + "rad)";
+        return css;
       };
 
-      Thing.prototype.update = function(position) {
+      Thing.prototype.update = function(_arg) {
         var css;
-        this.position = position;
+        this.position = _arg.position, this.angle = _arg.angle;
         css = this.position_css();
-        css["" + vendor_prefix + "-transition"] = "left " + frame_rate.frame_length_seconds + "s, top " + frame_rate.frame_length_seconds + "s";
         return this.node.css(css);
       };
 

@@ -148,7 +148,7 @@ module.factory 'networking', ($rootScope) ->
 
         update: (things) ->
             for thing in things
-                @things[thing.id].update thing.position
+                @things[thing.id].update thing
 
         remove: ->
             state.game = null
@@ -156,10 +156,12 @@ module.factory 'networking', ($rootScope) ->
             @node.remove()
 
     class Thing
-        constructor: ({@size, @position, @id, @game, @type}) ->
+        constructor: ({@size, @position, @angle, @id, @game, @type}) ->
             @game.things[@id] = @
             @node = @make_node()
             css = @position_css()
+            css["#{vendor_prefix}-transition"] = "left #{frame_rate.frame_length_seconds}s, top #{frame_rate.frame_length_seconds}s, #{vendor_prefix}-transform #{frame_rate.frame_length_seconds}s"
+            css["#{vendor_prefix}-transform-origin"] = "50% 50%"
             @node.css _.extend css,
                 width:meters_to_pixels @size.x
                 height:meters_to_pixels @size.y
@@ -172,11 +174,12 @@ module.factory 'networking', ($rootScope) ->
             node
 
         position_css: ->
-            screen_coordinates @position,@size
+            css = screen_coordinates(@position,@size)
+            css["#{vendor_prefix}-transform"] = "rotate(#{@angle}rad)"
+            css
 
-        update: (@position) ->
+        update: ({@position, @angle}) ->
             css = @position_css()
-            css["#{vendor_prefix}-transition"] = "left #{frame_rate.frame_length_seconds}s, top #{frame_rate.frame_length_seconds}s"
             @node.css css
 
         remove: ->
